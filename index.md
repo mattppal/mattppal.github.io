@@ -7,7 +7,7 @@
 #
 layout: home
 navigation_weight: 1
-title: Home
+title: home
 ---
 
 ## 👋&ensp;Hey there! I’m Matt Palmer, an {{site.author.job}} at {{site.author.company}} living in {{ site.author.location }}.
