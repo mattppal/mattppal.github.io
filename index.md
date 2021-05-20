@@ -7,9 +7,11 @@
 #
 layout: home
 navigation_weight: 1
+title: null
 ---
 
 ## 👋&ensp;Hey there! I’m Matt Palmer, an {{site.author.job}} at {{site.author.company}} living in {{ site.author.location }}.
+
 ### &emsp;<a href="/about" class="internal-link">More about me&nbsp;&rarr;</a>
 
 ## Here are a few recent projects~
