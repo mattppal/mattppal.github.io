@@ -10,7 +10,7 @@ navigation_weight: 1
 title: home
 ---
 
-## 👋&ensp;Hey there! I’m Matt Palmer, an {{site.author.job}} at {{site.author.company}} living in {{ site.author.location }}.
+## 👋&ensp;Hey there! I’m Matt Palmer, an {{ site.author.job }} at [{{ site.author.company }}]({{ site.author.company_link }}) living in [{{ site.author.location }}]({{site.author.location_link}}).
 
 ### &emsp;<a href="/about" class="internal-link">More about me&nbsp;&rarr;</a>
 

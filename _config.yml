@@ -3,7 +3,9 @@ author:
   name: Matt Palmer
   email: m@ppal.me
   location: Asheville, North Carolina
+  location_link: https://www.romanticasheville.com/
   company: Storyblocks
+  company_link: https://www.storyblocks.com/
   team: Analytics
   job: analytics engineer
 description: > # this means to ignore newlines until "show_excerpts:"
