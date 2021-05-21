@@ -3,6 +3,7 @@ layout: page
 title: about
 permalink: /about/
 ---
+
 {%- assign social = site.minima.social_links -%}
 
 <figure class="about-picture"><img src="/assets/media/IMG_3238.jpg" alt="" title="Matt Palmer">
