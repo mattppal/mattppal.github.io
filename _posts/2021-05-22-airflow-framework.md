@@ -2,7 +2,7 @@
 layout: post
 title: "Dynamically generated Airflow TaskGroups for data teams"
 categories: projects
-published: false
+published: true
 ---
 
 ### What is Airflow?
