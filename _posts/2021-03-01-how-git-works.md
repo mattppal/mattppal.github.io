@@ -4,6 +4,8 @@ title: "How Git works"
 categories: studies
 published: true
 ---
+**Note:** This is a pretty rough/unpolished guide I wrote while following a [Udemy course](https://www.udemy.com/course/git-and-github-complete-guide/). I found the first half of the course to be very helpful and interesting, while the latter half was a bit longwinded and unnecessary. For anyone that wants a fundamental understanding of Git, I think it's of great value.
+
 * TOC
 {:toc}
 
