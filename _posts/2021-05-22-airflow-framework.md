@@ -4,7 +4,8 @@ title: "Dynamically generated Airflow TaskGroups for data teams"
 categories: projects
 published: true
 ---
-
+* TOC
+{:toc}
 ### What is Airflow?
 
 Apache Airflow is an open-source, community-driven platform for programmatic scheduling and execution of workflows. It integrates with many popular data sources and offers an accessible way to build and deploy pipelines.
