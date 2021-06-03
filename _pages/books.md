@@ -7,12 +7,12 @@ In my free time, I really enjoy reading about passionate teams, successful compa
 
 ## Reading
 
-<div class="list-group">
+<div>
 {% for book in site.data['reading'] %}
-    <a href= "{{ book.link }}" class="list-group-item list-group-item-action flex-column align-items-start">
-      <div class="d-flex w-100 justify-content-between">
-        <h5 class="mb-1">{{ book.title }}</h5>
-          <p class="mb-1">{{ book.author }}</p>
+    <a href= "{{ book.link }}">
+      <div>
+        <h5>{{ book.title }}</h5>
+          <p>{{ book.author }}</p>
         <!-- <small>{{ book.date_read }}</small> -->
       </div>
     </a>
@@ -20,13 +20,12 @@ In my free time, I really enjoy reading about passionate teams, successful compa
 </div>
 
 ## Read
-
-<div class="list-group">
+<div>
 {% for book in site.data['read'] %}
-    <a href= "{{ book.link }}" class="list-group-item list-group-item-action flex-column align-items-start">
-      <div class="d-flex w-100 justify-content-between">
-        <h5 class="mb-1">{{ book.title }}</h5>
-          <p class="mb-1">{{ book.author }}</p>
+    <a href= "{{ book.link }}">
+      <div>
+        <h5>{{ book.title }}</h5>
+          <p>{{ book.author }}</p>
         <!-- <small>{{ book.date_read }}</small> -->
       </div>
     </a>
