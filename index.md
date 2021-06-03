@@ -10,8 +10,9 @@ navigation_weight: 1
 title: home
 ---
 
-## 👋&ensp;Hey there! I’m Matt Palmer, an {{ site.author.job }} at [{{ site.author.company }}]({{ site.author.company_link }}) living in [{{ site.author.location }}]({{site.author.location_link}}).
+## 👋&ensp;Hey there! I’m Matt Palmer, a {{ site.author.job }} at [{{ site.author.company }}]({{ site.author.company_link }}) living in [{{ site.author.location }}]({{site.author.location_link}}).
 
 ### &emsp;<a href="/about" class="internal-link">More about me&nbsp;&rarr;</a>
+### &emsp;<a href="/books" class="internal-link">Some books I've read&nbsp;&rarr;</a>
 
 ## Here are a few recent projects~

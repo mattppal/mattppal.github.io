@@ -4,12 +4,12 @@ author:
   email: m@ppal.me
   location: Asheville, North Carolina
   location_link: https://www.romanticasheville.com/
-  company: Storyblocks
-  company_link: https://www.storyblocks.com/
+  company: AllTrails
+  company_link: https://www.alltrails.com/
   team: Analytics
-  job: analytics engineer
+  job: product analyst
 description: > # this means to ignore newlines until "show_excerpts:"
-  Analytics engineer at Storyblocks & Swarthmore College grad. You can find me at the gym, 
+  Product analyst at AllTrails & Swarthmore College grad. You can find me at the gym, 
   on a bike, or on a trail when not at work.
 
 baseurl: "/"
@@ -71,3 +71,4 @@ plugins:
 collections:
   pages:
     output: true
+  
