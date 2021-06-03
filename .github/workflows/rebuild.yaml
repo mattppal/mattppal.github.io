@@ -1,17 +1,20 @@
-name: Rebuild site
+# File: .github/workflows/refresh.yml
+name: Refresh
 
 on:
   schedule:
-    # * is a special character in YAML so you have to quote this string
-    - cron:  '0 8 * * *'
+    - cron:  '0 3 * * *' # Runs every day at 3am
 
 jobs:
-  jekyll:
-    runs-on: ubuntu-16.04
+  refresh:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-
-    # Standard usage
-    - uses:  helaili/jekyll-action@v2
-      with:
-        token: ${{ secrets.API_TOKEN }}
+      - name: Trigger GitHub pages rebuild
+        run: |
+          curl --fail --request POST \
+            --url https://api.github.com/repos/${{ github.repository }}/pages/builds \
+            --header "Authorization: Bearer $USER_TOKEN"
+        env:
+          # You must create a personal token with repo access as GitHub does
+          # not yet support server-to-server page builds.
+          USER_TOKEN: ${{ secrets.API_TOKEN }}
