@@ -1,21 +1,15 @@
 name: Testing the GitHub Pages publication
 
 on:
-  push
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron:  '0 8 * * *'
 
 jobs:
   jekyll:
     runs-on: ubuntu-16.04
     steps:
     - uses: actions/checkout@v2
-
-    # Use GitHub Actions' cache to shorten build times and decrease load on servers
-    - uses: actions/cache@v2
-      with:
-        path: vendor/bundle
-        key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile') }}
-        restore-keys: |
-          ${{ runner.os }}-gems-
 
     # Standard usage
     - uses:  helaili/jekyll-action@v2
