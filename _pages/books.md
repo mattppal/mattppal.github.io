@@ -4,9 +4,7 @@ title: books
 permalink: /books/
 ---
 In my free time, I really enjoy reading about passionate teams, successful companies, and interesting people. Here's what I've been into lately ordered by date of completion:
-
 ## Reading
-
 <div>
 {% for book in site.data['reading'] %}
     <a href= "{{ book.link }}">
