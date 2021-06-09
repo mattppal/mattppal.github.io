@@ -32,6 +32,7 @@ module Readings
                     date_read = item.description.match(/read\s*at:\s*((\d|\/)*)/)[1]
                     img_src = parsed.xpath("//img").attr('src').text
                     url = parsed.xpath("//a").attr('href').text
+                    guid = item.link.split('/')[-1].split('?')[0]
                     
 
                     payload = {'title' => item.title, 
@@ -40,7 +41,7 @@ module Readings
                                 'date_read' => item.pubDate.to_date,
                                 'author' => author,
                                 # 'description' => item.description,
-                                'guid' => item.link.split('/')[-1].split('?')[0]
+                                'guid' => guid
 
                     }
 
