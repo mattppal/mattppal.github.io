@@ -31,10 +31,11 @@ module Readings
                     author = item.description.match(/author:\s*((\w|\s|\.|\/)*)/)[1]
                     date_read = item.description.match(/read\s*at:\s*((\d|\/)*)/)[1]
                     img_src = parsed.xpath("//img").attr('src').text
+                    url = parsed.xpath("//a").attr('href').text
                     
 
                     payload = {'title' => item.title, 
-                                'link' => item.link,
+                                'link' => url,
                                 'img_src' => img_src,
                                 'date_read' => item.pubDate.to_date,
                                 'author' => author,

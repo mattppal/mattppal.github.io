@@ -31,17 +31,19 @@ module Readings
                 feed = RSS::Parser.parse(rss)
                 # Add fake virtual documents to the collection
                 feed.items.each do |item|
+                    
                     # puts "Item: #{item.title}"
                     
                     parsed = Nokogiri::HTML.parse(item.description)
 
                     author = item.description.match(/author:\s*((\w|\s|\.|\/)*)/)[1]
                     date_read = item.description.match(/read\s*at:\s*((\d|\/)*)/)[1]
+                    url = parsed.xpath("//a").attr('href').text
                     img_src = parsed.xpath("//img").attr('src').text
                     guid = item.link.split('/')[-1].split('?')[0]
 
                     payload = {'title' => item.title, 
-                                'link' => item.link,
+                                'link' => url,
                                 'img_src' => img_src,
                                 'date_read' => item.pubDate.to_date,
                                 'author' => author,
