@@ -4,6 +4,9 @@ name: Build and Deploy to Github Pages
 on:
   schedule:
     - cron:  '0 3 * * *' # Runs every day at 3am
+  push:
+    branches:
+      - master 
           
 jobs:
   build_and_deploy:
