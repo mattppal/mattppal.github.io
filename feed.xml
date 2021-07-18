@@ -1,0 +1,1488 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-07-18T03:06:15+00:00</updated><id>/feed.xml</id><title type="html">Matt Palmer</title><subtitle>Product analyst at AllTrails &amp; Swarthmore College grad. You can find me at the gym,  on a bike, or on a trail when not at work.
+</subtitle><author><name>Matt Palmer</name><email>m@ppal.me</email></author><entry><title type="html">Dynamically generated Airflow TaskGroups for data teams</title><link href="/projects/2021/05/22/airflow-framework.html" rel="alternate" type="text/html" title="Dynamically generated Airflow TaskGroups for data teams" /><published>2021-05-22T00:00:00+00:00</published><updated>2021-05-22T00:00:00+00:00</updated><id>/projects/2021/05/22/airflow-framework</id><content type="html" xml:base="/projects/2021/05/22/airflow-framework.html">&lt;ul id=&quot;markdown-toc&quot;&gt;
+  &lt;li&gt;&lt;a href=&quot;#what-is-airflow&quot; id=&quot;markdown-toc-what-is-airflow&quot;&gt;What is Airflow?&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#dynamic-taskgroups&quot; id=&quot;markdown-toc-dynamic-taskgroups&quot;&gt;Dynamic TaskGroups&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#implementation&quot; id=&quot;markdown-toc-implementation&quot;&gt;Implementation&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#features&quot; id=&quot;markdown-toc-features&quot;&gt;Features&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#wrap-up&quot; id=&quot;markdown-toc-wrap-up&quot;&gt;Wrap-up&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&quot;what-is-airflow&quot;&gt;What is Airflow?&lt;/h3&gt;
+
+&lt;p&gt;Apache Airflow is an open-source, community-driven platform for programmatic scheduling and execution of workflows. It integrates with many popular data sources and offers an accessible way to build and deploy pipelines.&lt;/p&gt;
+
+&lt;p&gt;Airflow is great for analytics and engineering teams since it has a fairly gentle learning curve and can be implemented purely using Python. It’s fairly staightforward and provides a great UI. Being open source, new features are constantly being added. Community support means that common solutions can frequently be found online.&lt;/p&gt;
+
+&lt;h3 id=&quot;dynamic-taskgroups&quot;&gt;Dynamic TaskGroups&lt;/h3&gt;
+
+&lt;p&gt;Airflow provides a great opportunity for analytics teams— with a bit of setup, we can leverage the platform to provide dynamic workflow generation with minimal maintenence.&lt;/p&gt;
+
+&lt;p&gt;While little Airflow knowledge is needed after setup, anyone with a basic Python knowledge can troubleshoot a DAG or implement new features. In the example discussed here, analysts and others can still add/subtract operators to/from a workflow, reorder execution, and assign priority groups with only a basic knowlege of Git.&lt;/p&gt;
+
+&lt;p&gt;The basic premise is as follows:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Create a GitHub repository with an ETL/pipeline structure.&lt;/li&gt;
+  &lt;li&gt;Use GitHub Actions to sync this repository to S3 or another filestore.&lt;/li&gt;
+  &lt;li&gt;Leverage the boto Python library in Airflow to pull in the repo.&lt;/li&gt;
+  &lt;li&gt;Write a DAG to recurse throught the tree and generate a pipeline.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;While we originally synced directly to GitHub, Airflow refresh frequencies quickly led us to hit the GitHub API limit. Our workaround was syncing the repo to S3, which uses actively developed packages and is more robust.&lt;/p&gt;
+
+&lt;p&gt;With this method, analysts can push edits to the repository and sync them automattically with the DAG. We’re currently working on a similar implementation at Storyblocks. Our old tool, Jenkins, made it terribly difficult to troubleshoot ETL failures and was quite opaque to analysts— knowedge of the tool was necessary to make updates. Additionally, each time a push to our exising data repo was made, we had to swap Docker tags, a manual process that was easy to overlook. An Airflow implementation makes the ETL structure more accessible to the analytics team, removes manual steps, and improves maintainability.&lt;/p&gt;
+
+&lt;p&gt;Furthermore, with some string parsing, we can create conventions for excluding, prioritizing, and grouping file execution. For example, prepending an ‘X_’ to exclude a file in the repo or using ‘1&lt;em&gt;’, ‘2&lt;/em&gt;’, etc. to create groups of files that need to be ordered.&lt;/p&gt;
+
+&lt;h3 id=&quot;implementation&quot;&gt;Implementation&lt;/h3&gt;
+
+&lt;p&gt;Take the following example of a &lt;a href=&quot;https://www.youtube.com/watch?v=D5hpjlYHEGw&amp;amp;t=386s&quot;&gt;&lt;em&gt;warehouse friendly schema&lt;/em&gt;&lt;/a&gt; from Periscope Data co-founder Tom O’Neill. In Tom’s example, four stages are used for effective data management.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Protective: this stage enables file renaming and filtering. For example, suppose engineering has to rename a column in the source data. A protective view enables analytics to make one transformation from the source without having to rewrite multiple scripts.&lt;/li&gt;
+  &lt;li&gt;Staging: we can perform simple transforms and tests off of the protective layer to ensure data quality and make slight adjustments.&lt;/li&gt;
+  &lt;li&gt;Reporting: Wide tables generated from staging views. These are intended for transformations by analytsts or to be used for aggregations, charts, etc.&lt;/li&gt;
+  &lt;li&gt;Data Marts: team-focused data marts are a &lt;em&gt;source of truth&lt;/em&gt; for teams. For example, there might be an &lt;em&gt;Finance Data Mart&lt;/em&gt; that provides aggregations off reporting and staged data specific to the accounting team. We’re fine with building business logic into this mart, since the only consumers are the finance team and changes to their logic have no downstream consequences.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Tom goes in to much more detail, but using this framework in our example:&lt;/p&gt;
+
+&lt;figure&gt;
+  &lt;img src=&quot;/assets/posts/airflow-etl/IMG_01.jpg&quot; alt=&quot;Example implementation of Tom's warehouse.&quot; /&gt;
+  &lt;figcaption&gt;&lt;i&gt;&lt;center&gt;Example behavior of the first three steps of a DAG built from Tom's framework.&lt;/center&gt;&lt;/i&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Using heirarchical folders in our repo allows us to group steps together neatly in our DAG. Expanding the step provides more detail and demonstrates example usage of “priority groups.”&lt;/p&gt;
+
+&lt;figure&gt;
+  &lt;img src=&quot;/assets/posts/airflow-etl/IMG_02.jpg&quot; alt=&quot;TaskGroup expansion within the warehouse.&quot; /&gt;
+  &lt;figcaption&gt;&lt;i&gt;&lt;center&gt;Expanding an overarching step shows sub-steps and priority groups therein.&lt;/center&gt;&lt;/i&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Here, priority groups are created by prepending a number to a script. Our code is written such that this will trigger another TaskGroup to be created and the labelled files to be dropped inside. With this method, multiple files can be named ‘1_’ and executed in parallel. The implementation might create more nesting than is necessary, but it works for our purposes. Expanding these groups reveals the labeled scripts.&lt;/p&gt;
+
+&lt;figure&gt;
+  &lt;img src=&quot;/assets/posts/airflow-etl/IMG_03.jpg&quot; alt=&quot;Example priority group behavior&quot; /&gt;
+  &lt;figcaption&gt;&lt;i&gt;&lt;center&gt;Using naming conventions, we can prioritize script execution using only Git.&lt;/center&gt;&lt;/i&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;h3 id=&quot;features&quot;&gt;Features&lt;/h3&gt;
+
+&lt;p&gt;The GitHub/Airflow integration enables the following:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Easy visual inspection of the ETL to confirm files are executing as intended.&lt;/li&gt;
+  &lt;li&gt;Gantt charts and execution times for each step, allowing anyone to visually inspect and identify troublesome scripts.&lt;/li&gt;
+  &lt;li&gt;One-step ETL updates through pushes to a GitHub repo.&lt;/li&gt;
+  &lt;li&gt;A framework for implementing new execution features via Python and naming conventions.&lt;/li&gt;
+  &lt;li&gt;Robust scheduling features standard with Airflow.&lt;/li&gt;
+  &lt;li&gt;Email notifications for execution fails/retries.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Additionally, we’re interested in adding the folowing:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;A way to easily deliniate those scripts that will halt execution on failure and those that have no effect.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;wrap-up&quot;&gt;Wrap-up&lt;/h3&gt;
+
+&lt;p&gt;Our implementation uses the open-source tool Apache Airflow to create a low-maintenance DAG from any GitHub repo. In this example, we leverage a Warehouse framework from Tom O’Neill to programmatially execute scripts in a fictional data warehouse. The solution is easy to maintain for data teams and requires only a knowledge of Git to edit, allowing improved data accessibility and easier updates to warehouse code. Furthermore, the tool lets users edit prioritization and structure using a familiar folder interface. Hopefully, others will find this framework useful. For specific examples and code, please contact me directly.&lt;/p&gt;</content><author><name>Matt Palmer</name><email>m@ppal.me</email></author><category term="projects" /><summary type="html">What is Airflow? What is Airflow?</summary></entry><entry><title type="html">Building a SCD Type-2 table with Databricks Delta Lake and Spark Streaming</title><link href="/data-eng/2021/04/27/scd-type-2.html" rel="alternate" type="text/html" title="Building a SCD Type-2 table with Databricks Delta Lake and Spark Streaming" /><published>2021-04-27T00:00:00+00:00</published><updated>2021-04-27T00:00:00+00:00</updated><id>/data-eng/2021/04/27/scd-type-2</id><content type="html" xml:base="/data-eng/2021/04/27/scd-type-2.html">&lt;ul id=&quot;markdown-toc&quot;&gt;
+  &lt;li&gt;&lt;a href=&quot;#background&quot; id=&quot;markdown-toc-background&quot;&gt;Background&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#solution&quot; id=&quot;markdown-toc-solution&quot;&gt;Solution&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#implementation&quot; id=&quot;markdown-toc-implementation&quot;&gt;Implementation&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#creating-a-scd-type-2-table-for-users&quot; id=&quot;markdown-toc-creating-a-scd-type-2-table-for-users&quot;&gt;Creating a SCD Type-2 table for users&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#foreachbatch&quot; id=&quot;markdown-toc-foreachbatch&quot;&gt;forEachBatch&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#databricks-upsert&quot; id=&quot;markdown-toc-databricks-upsert&quot;&gt;Databricks Upsert&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#using-a-visitor-first-dates-table-to-meet-project-requirements&quot; id=&quot;markdown-toc-using-a-visitor-first-dates-table-to-meet-project-requirements&quot;&gt;Using a &lt;em&gt;Visitor First Dates&lt;/em&gt; table to meet project requirements&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#partitioning&quot; id=&quot;markdown-toc-partitioning&quot;&gt;Partitioning&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#schematic&quot; id=&quot;markdown-toc-schematic&quot;&gt;Schematic&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#applications&quot; id=&quot;markdown-toc-applications&quot;&gt;Applications&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#checks-and-tests&quot; id=&quot;markdown-toc-checks-and-tests&quot;&gt;Checks and tests&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&quot;background&quot;&gt;Background&lt;/h3&gt;
+
+&lt;p&gt;A common problem with visitor tracking is the inability to follow users across multiple devices. Even on the same device, should a visitor choose to clear their cookies, we will be unable to link them to their previous session. Unfortunately, that means processes that treat visitor cookies as unique visitors are imperfect.&lt;/p&gt;
+
+&lt;p&gt;For example, A/B test bucketing will be affected, even if acutely, by those visitors switching devices, clearing cookies, or using adblockers. Some users will see multiple experiences and conversions will be attributed to the wrong variant. We simply treat this as noise in experiment and control, demanding a larger sample size.&lt;/p&gt;
+
+&lt;p&gt;While this is an unavoidable issue, there is one place where we can link visitor cookies— when they have an account on the site and log-in via multiple sessions. In these instances, it should be possible to generate a “change log” of visitor cookies for a given user. In practice, the result would be an &lt;a href=&quot;https://en.wikipedia.org/wiki/Slowly_changing_dimension#Type_2:_add_new_row&quot;&gt;SCD Type-2 Table&lt;/a&gt;, with visitor cookie as the primary ID and a changing column of userids. That way, we can simply join in on visitor cookie id to get a relevant user for a given timeframe.&lt;/p&gt;
+
+&lt;figure&gt;
+  &lt;img src=&quot;/assets/posts/visitor-lookup/IMG_01.jpg&quot; alt=&quot;Example behavior of SCD Type-2&quot; /&gt;
+  &lt;figcaption&gt;&lt;i&gt;&lt;center&gt;An example SCD Type-2 entry for a visitor switching userids&lt;/center&gt;&lt;/i&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;While this doesn’t solve any issues for those visitors who never create an account (or don’t log-in), it does allow us to be more precise with attribution and backfilling userids in any spot where they’re otherwise unavailable.&lt;/p&gt;
+
+&lt;h3 id=&quot;solution&quot;&gt;Solution&lt;/h3&gt;
+
+&lt;p&gt;An SCD Type-2 table is not terribly complex from a SQL standpoint, we can group by visitor cookie and window over all rows, finding differing userids, then setting appropriate start and end dates. That was our first solution.&lt;/p&gt;
+
+&lt;p&gt;While it worked for a while, the underlying data actually contained all of the events on our site. As one can imagine, this is quite a costly operation. Job times quickly surpassed a hour, as the entire table was dropped and rebuilt nightly. The process was inefficient and would quickly become untenable as the visitors on our site increased.&lt;/p&gt;
+
+&lt;p&gt;In theory, there should be an append-only way to update the table. Storyblocks uses &lt;a href=&quot;https://databricks.com/product/delta-lake-on-databricks&quot;&gt;Databricks Delta Lake&lt;/a&gt;, which supports a number of reliability features and enhancements, but also allows us to use Spark streaming. The ideal end product would be a streaming job, which reads from our incoming events, looks at visitor cookies &amp;amp; userids, and outputs that information as a change log to an SCD Type-2 table in Delta Lake. From there, we can pass that table on to our data warehouse (Amazon Redshift) or use it in Delta for further processing. Sounds simple, right?&lt;/p&gt;
+
+&lt;p&gt;For our solution the follow attributes were necessary:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;SCD Type-2 format (duh).&lt;/li&gt;
+  &lt;li&gt;Row 1 for a cookie must have a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;valid_start_date&lt;/code&gt; equal to the first date for that visitor(!) This introduces significant complexity.&lt;/li&gt;
+  &lt;li&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;valid_end_date&lt;/code&gt; for the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;current&lt;/code&gt; row will be the timestamp of the last run of the script.&lt;/li&gt;
+  &lt;li&gt;We’ll keep a record of &lt;em&gt;all&lt;/em&gt; visitors, even those without a userid (it’ll be set to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NULL&lt;/code&gt;).&lt;/li&gt;
+  &lt;li&gt;A given &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;valid_end_date&lt;/code&gt; must be 1 microsecond less than the next &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;valid_start_date&lt;/code&gt; to prevent two values from being equal.&lt;/li&gt;
+  &lt;li&gt;The table should be partitioned somehow.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;implementation&quot;&gt;Implementation&lt;/h3&gt;
+
+&lt;p&gt;It quickly became evident that a real-time stream was impractical:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Most of our production jobs are semi-streaming and run on 10-15 minute intervals making a true stream overkill.&lt;/li&gt;
+  &lt;li&gt;New data depends on existing values: updating our records depends on if we get a new userid/cookie pair or not.&lt;/li&gt;
+  &lt;li&gt;Processing &lt;em&gt;all&lt;/em&gt; event data for &lt;em&gt;all&lt;/em&gt; visitors could be costly. While technically we only need visitors with a userid, the scope of the project required all visitor cookies to be processed (discussed later).&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Because of #1, we knew that the solution wouldn’t need to be a true stream. As a result of #2, it became evident that it couldn’t really be a stream at all. Implementing a solution that, for each row, checks existing data &amp;amp; performs either an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UPDATE&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MERGE&lt;/code&gt; is not possible using PySpark (I couldn’t crack it, at least). There is, however, a process that allows us to attain pseudo-streaming behavior while ticking our requirements: a combination of Spark &lt;a href=&quot;https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html#foreachbatch&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forEachBatch&lt;/code&gt;&lt;/a&gt; and Databricks &lt;a href=&quot;https://docs.databricks.com/spark/latest/spark-sql/language-manual/delta-merge-into.html&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MERGE INTO&lt;/code&gt;&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;This is a known implementation, but Delta documentation only provides &lt;a href=&quot;https://docs.delta.io/0.8.0/delta-update.html#upsert-from-streaming-queries-using-foreachbatch&quot;&gt;very simple examples&lt;/a&gt;. The basic premise is as follows:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Create a stream of the data we’d like to transform. Previously, we were using &lt;em&gt;all&lt;/em&gt; events. For this implementation, pageviews will suffice.&lt;/li&gt;
+  &lt;li&gt;Batch the stream up using some option like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;maxFilesPerTrigger&lt;/code&gt;. The stream will also do this automatically.&lt;/li&gt;
+  &lt;li&gt;&lt;em&gt;For each batch&lt;/em&gt; execute some transformation or SQL that will &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MERGE INTO&lt;/code&gt; a data source.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;The really cool thing about &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MERGE INTO&lt;/code&gt;, often referred to as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UPSERT&lt;/code&gt;, is that it allows you to both update and insert in one transaction. As I mentioned, this is crucial for our implementation, since we need to:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Take each batch of data and generate a SCD Type-2 dataframe to insert into our table.&lt;/li&gt;
+  &lt;li&gt;Check if current cookie/user pairs exist in our table.&lt;/li&gt;
+  &lt;li&gt;Perform relavant updates and/or inserts.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;#2 introduces significant complexity. For a given pair, &lt;em&gt;if&lt;/em&gt; the same pair is current, we need only update the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;valid_end_date&lt;/code&gt;. However, if there’s a new pair, we need to update the end data &lt;em&gt;and&lt;/em&gt; insert the new row(s). This is further complicated by the fact that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UPSERT&lt;/code&gt; can’t perform multiple operations on one row. We’ll need to split the data into rows that need to be updated and rows to be inserted.&lt;/p&gt;
+
+&lt;p&gt;Additional complexity is added by including all visitors to the site. For users only, the streaming job is relatively small. Adding visitors increases the number of rows by roughly two orders of magnitude. After many failed attempts and much deliberation, the best method appeared to be first generating an SCD Type-2 table for visitors with a userid only, then using another data source to meet our additional requirements. Both will be discussed here.&lt;/p&gt;
+
+&lt;h3 id=&quot;creating-a-scd-type-2-table-for-users&quot;&gt;Creating a SCD Type-2 table for users&lt;/h3&gt;
+
+&lt;p&gt;The much easier part of this process was creating a change-log table for users only (still at the cookie level), with no adjustments to the first date for the visitor. This idea is very easy to express in SQL— a simple window would suffice, but is more challenging in spark streaming.&lt;/p&gt;
+
+&lt;h4 id=&quot;foreachbatch&quot;&gt;forEachBatch&lt;/h4&gt;
+
+&lt;p&gt;Since our events infrastrucutre at Storyblocks is not-quite-realtime (pageviews update every 15 minutes, I believe), we could save costs with a job that runs a few times daily. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forEachBatch&lt;/code&gt; is a nice alternative to pure streaming, since we can perform aggregations on batches that would otherwise prove difficult in a stream. In order to use the sink, we define a function to be executed on each “batch.” It’s then as simple as passing that function to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;writeStream&lt;/code&gt; in our job. You can use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;maxFilesPerTrigger&lt;/code&gt; to specify how many files pass through on each batch or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;trigger(once=True)&lt;/code&gt; to limit a run to one batch.&lt;/p&gt;
+
+&lt;p&gt;Typically, I’ll rebuild the table using an appropriate &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;maxFilesPerTrigger&lt;/code&gt;. Once the job is set, I’ll switch to triggering once— that way we can run the notebook on a schedule and the cell will terminate once the streaming has completed. I haven’t found a way to terminate a cell in a streaming job once all current data has been processed, unfortunately.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;user_mapping = (spark
+                  .readStream
+#                   .option('maxFilesPerTrigger', 1000)
+                  .format('delta')
+                  .table([page view table])
+                  .writeStream
+                  .option([checkpoint location])
+                  .trigger(once=True)
+                  .foreachBatch(user_mapping_upsert)
+                  .outputMode('update')
+                  .start()
+                )
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Defining the function itself is very straightforward. The only real call-out is that, if using SQL, be sure to preserve the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sparkSession&lt;/code&gt; of the temporary table you create:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;def user_mapping_upsert(microBatchOutputDF, batchId):
+
+    microBatchOutputDF.createOrReplaceTempView(&quot;updates&quot;)
+
+    microBatchOutputDF._jdf.sparkSession().sql(...
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now we just need the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MERGE INTO&lt;/code&gt; for each batch.&lt;/p&gt;
+
+&lt;h4 id=&quot;databricks-upsert&quot;&gt;Databricks Upsert&lt;/h4&gt;
+
+&lt;p&gt;Databricks has some &lt;a href=&quot;https://docs.databricks.com/spark/latest/spark-sql/language-manual/delta-merge-into.html&quot;&gt;prett good documentation&lt;/a&gt; here and seems to be adding features fairly regularly. &lt;a href=&quot;https://docs.databricks.com/delta/delta-update.html#upsert-from-streaming-queries-using-foreachbatch&quot;&gt;This example&lt;/a&gt; provided the inspiration for this entire project. An immensely helpful feature would be the ability to perform multiple actions for each row. For example, when matched &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;INSERT&lt;/code&gt; row &lt;em&gt;and&lt;/em&gt; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UPDATE SET&lt;/code&gt; another row. Presently, we’re limited to inserting &lt;em&gt;only&lt;/em&gt; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WHEN NOT MATCHED&lt;/code&gt; and updating or deleting &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WHEN MATCHED&lt;/code&gt;. This added some complexity to our solution.&lt;/p&gt;
+
+&lt;p&gt;Since each upsert is being performed on a “batch” of pageviews, our goal was to replicate functionality of a changelog within each batch, e.g. one batch of pageview output should look exactly like the end-product, then assimilate those batches on a per-cookie basis into our table. There will be some joins to a table called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;first_dates&lt;/code&gt;, that will be discussed later. Note: most of this is pseudo-code intended to get my point across without relaying too much information about our tables. 🙂&lt;/p&gt;
+
+&lt;p&gt;In the first CTE, we can generate some basic info on a cookie/user basis, like the previous userid, the next userid, if it’s a first visit for a given cookie, if the userid is new or seen, etc. This stream is limited only to cookies with a userid, so we don’t have to worry about &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NULL&lt;/code&gt; values. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;landed &lt;/code&gt; is our timestamp column.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;MERGE INTO dev.user_mapping AS v
+    USING (
+         -- selecting records from pageviews and marking uid changes
+      WITH get_visitor_characteristics AS (
+          -- pull characteristics from pageviews stream
+
+          SELECT
+            u.visitorCookieId
+            , u.userId
+            , u.landed
+
+            -- windows
+            , LAG(u.userid) OVER (PARTITION BY u.visitorCookieId ORDER BY u.landed ASC) as prevUid
+            , LEAD(u.userid) OVER (PARTITION BY u.visitorCookieId ORDER BY u.landed ASC) as nextUid
+
+            -- spark hates aliases, sorry
+            , CASE WHEN LAG(u.userid) OVER (PARTITION BY u.visitorCookieId ORDER BY u.landed ASC) IS NULL
+                THEN TRUE ELSE FALSE END as isFirstVisit
+
+            , CASE WHEN LAG(u.userid) OVER (PARTITION BY u.visitorCookieId ORDER BY u.landed ASC) &amp;lt;&amp;gt; u.userId
+                  AND LEAD(u.userid) OVER (PARTITION BY u.visitorCookieId ORDER BY u.landed ASC) IS NOT NULL
+                    THEN TRUE ELSE FALSE END as isNewUid
+
+          FROM updates AS u
+          WHERE 1 = 1
+      )
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Less-than-ideal aliasing in Hive SQL makes for some long column syntax. The next CTE takes those attributes and flattens them, assigning a start and end date based on userid changes. Limiting to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;isNewUid&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;isFirstVisit&lt;/code&gt; ensures there aren’t back-to-back rows with the same userid.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;, collapse_visitors AS (
+
+          -- We have to flatten updates to make sure there aren't two records for a given vcid in a batch.
+          -- Here, we getting distinct records with a uid change and assign a validStartDate and validEndDate
+
+          SELECT
+            gvc.visitorCookieId
+            , gvc.userId
+            , gvc.landed as validStartDate
+
+            -- windows
+            , LEAD(gvc.landed) OVER (PARTITION BY gvc.visitorcookieid ORDER BY gvc.landed ASC) as validEndDate
+
+            , CASE WHEN LEAD(gvc.landed)
+                OVER (PARTITION BY gvc.visitorcookieid ORDER BY gvc.landed ASC) IS NULL
+                  THEN TRUE ELSE FALSE END as isCurrent
+
+            , RANK() OVER (PARTITION BY visitorCookieId ORDER BY gvc.landed ASC) as updateRank
+          FROM get_visitor_characteristics gvc
+          WHERE 1 = 1
+              AND gvc.isNewUid OR gvc.isFirstVisit
+          ORDER BY visitorcookieid, landed DESC
+      )
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now, we need to finesse databricks features a bit. Since upsert is limited by the number of operations performed on each row, we’ll split the data into two camps:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Update existing rows. Note: this should only happen for existing cookies.&lt;/li&gt;
+  &lt;li&gt;Insert new rows. This operation will be performed for old and new cookies.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;This will require a join to the very table we’re inserting, which is possible through &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forEachBatch&lt;/code&gt;! To accomplish the desired behavior, we’ll define a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mergeKey&lt;/code&gt; that determines what will be inserted. Basically, we’re selectively duplicating data. For data to be inserted (no matter what) we set the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mergeKey&lt;/code&gt; to be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NULL&lt;/code&gt;. For data to be matched (or inserted if no existing cookie is found), the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mergeKey&lt;/code&gt; can be the cookie.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;), segment_update_and_insert AS (
+
+          -- updates existing uids
+          SELECT
+            -- mergeKey lets us chose what is matched and thus inserted
+            cv.visitorCookieId as mergeKey
+
+            , cv.visitorCookieId
+            , cv.userId
+            , cv.validStartDate
+            , CASE WHEN cv.validEndDate IS NULL THEN NULL
+                     ELSE (cv.validEndDate - INTERVAL '1 microsecond') END as validEndDate
+
+            -- windows
+            , MAX(cv.updateRank) OVER (PARTITION BY cv.visitorCookieId) as maxUpdateRank
+
+            , MIN(CASE WHEN cv.userId &amp;lt;&amp;gt; vm.user_id OR vm.user_id IS NULL THEN updateRank ELSE NULL END)
+                OVER (PARTITION BY cv.visitorCookieId) as minUnequalUidUpdateRank
+
+            , CASE WHEN vm.visitor_cookie_id IS NULL THEN TRUE ELSE FALSE END as isNewVcid
+
+            , CASE WHEN vm.user_id IS NULL AND cv.userId IS NOT NULL THEN TRUE ELSE FALSE END as isFirstTimeUid
+
+          FROM collapse_visitors AS cv
+          -- LEFT JOIN vm to grab the minUnequalUpdateRank and isNewVcid
+          LEFT JOIN dev.user_mapping AS vm
+              ON vm.is_current
+              AND cv.visitorCookieId = vm.visitor_cookie_id
+          WHERE 1 = 1
+
+          UNION ALL
+
+          -- inserts changes (uid) for existing vcids
+          SELECT
+            NULL as mergeKey
+            , cv.visitorCookieId
+            , cv.userId
+            , cv.validStartDate
+            , CASE WHEN cv.validEndDate IS NULL THEN NULL
+                    ELSE (cv.validEndDate - INTERVAL '1 microsecond') END as validEndDate
+
+            -- windows
+            , MAX(cv.updateRank) OVER (PARTITION BY cv.visitorCookieId) as maxUpdateRank
+
+            , MIN(CASE WHEN cv.userId &amp;lt;&amp;gt; vm.user_id THEN updateRank ELSE NULL END)
+                OVER (PARTITION BY cv.visitorCookieId) as minUnequalUidUpdateRank
+
+            , CASE WHEN vm.visitor_cookie_id IS NULL THEN TRUE ELSE FALSE END as isNewVcid
+
+            , False as isFirstTimeUid
+
+          FROM collapse_visitors AS cv
+          -- inner joing vm— we only want to update existing rows with a userid, all others will be inserted in the other SELECT
+          INNER JOIN dev.user_mapping AS vm
+              ON vm.is_current
+              AND cv.visitorCookieId = vm.visitor_cookie_id
+          WHERE 1 = 1
+          -- we want all change data UNLESS the first row uid is equal to what we already have.
+              AND NOT (cv.userId = vm.user_id AND cv.updateRank = 1)
+          ORDER BY mergeKey, validStartDate ASC
+      )
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Especially important is the filter on the second union— &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AND NOT (cv.userId = vm.user_id AND cv.updateRank = 1)&lt;/code&gt;. This ensures that if a visitor &lt;em&gt;returns&lt;/em&gt; to the site with the same userid in a batch then switches to a new userid, we won’t record the duplicate id, but we will capture the change. The left join and inner join help to select pertinent data from each source, but there is still more filtering to be done. Note the use of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;updateRank&lt;/code&gt; to get a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;maxUpdateRank&lt;/code&gt; and a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;minUnequalUidUpdateRank&lt;/code&gt;. To avoid overlap, we set the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;validEndDate&lt;/code&gt; as one microsecond less the previous start date. Now we can select from that data with an admittedly complex filter to get only the rows we desire.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;, final_select AS (
+      SELECT
+        sui.mergeKey
+        , sui.visitorCookieId
+        , sui.userId
+
+        -- IF the new user was previously a visitor, we want to change the first validStartDate to be the first visitor date.
+        , sui.validStartDate
+        , sui.validEndDate
+        , sui.isCurrent
+
+      FROM segment_update_and_insert AS sui
+      WHERE 1 = 1
+       AND (mergeKey IS NULL
+       -- NOTE: these filters are for the first select in segment_update_and_insert
+             OR (mergeKey IS NOT NULL
+               AND (sui.isNewVcid
+                 OR sui.updateRank = sui.minUnequalUidUpdateRank
+                   )
+                )
+            )
+    )
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The filter &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WHERE&lt;/code&gt; clause is basically saying, “Insert all of the rows we said, but for the matched rows only select those that are new visitors or those where we see the first userid change based on existing data.” Now, we take this big ‘ol query and insert on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mergeKey&lt;/code&gt; (and our partition &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;vcid_first_two&lt;/code&gt;).&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;) AS up
+    ON (v.vcid_first_two = up.vcid_first_two AND v.visitor_cookie_id = up.mergeKey)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The last bit of complexity comes from the update statement:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;-- these rows are included in the first select of segment_update_and_insert
+    WHEN MATCHED
+      AND v.user_id &amp;lt;&amp;gt; up.userId
+      AND v.is_current
+    THEN UPDATE SET v.valid_end_date = (up.validStartDate - INTERVAL '1 microsecond'), v.is_current = False
+
+    -- this statement applies to all new vcid's and any vcid where we set mergeKey IS NULL
+    WHEN NOT MATCHED THEN
+      INSERT (visitor_cookie_id
+              , user_id
+              , valid_start_date
+              , valid_end_date
+              , is_current
+              , vcid_first_two
+              )
+      VALUES (up.visitorCookieId
+              , up.userId
+              , up.validStartDate
+              , up.validEndDate
+              , up.isCurrent
+              , up.vcid_first_two
+              )
+        &quot;&quot;&quot;)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;When we match a userid in the existing table that is current and we have a differing userid incoming, we’ll need to set the end date to match the rest of our table. This is why matched rows are filtered to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sui.updateRank = sui.minUnequalUidUpdateRank&lt;/code&gt;. When not matched, we can insert the new values. Applying this SQL to each batch of a pageviews stream results in a changelog for every visitor with a userid.&lt;/p&gt;
+
+&lt;h3 id=&quot;using-a-visitor-first-dates-table-to-meet-project-requirements&quot;&gt;Using a &lt;em&gt;Visitor First Dates&lt;/em&gt; table to meet project requirements&lt;/h3&gt;
+
+&lt;p&gt;Due to infrastructure demands, we need a few more things from the output generated by mapping users.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;We need the very first &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;valid_start_date&lt;/code&gt; to be the first timestamp we saw the &lt;em&gt;visitor&lt;/em&gt;, not the user. That means we’ll need pageviews with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NULL&lt;/code&gt; userids, too.&lt;/li&gt;
+  &lt;li&gt;For every visitor &lt;em&gt;without&lt;/em&gt; a userid, we want their first timestamp and a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NULL&lt;/code&gt; for userid.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;While simple, these changes require us from gathering info for users to &lt;em&gt;all visitors&lt;/em&gt;, which is about a two order of magnitude increase in total visitor count.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;def first_dates_upsert(microBatchOutputDF, batchId):
+
+    microBatchOutputDF.createOrReplaceTempView(&quot;updates&quot;)
+
+    # pass spark sql. Note: ._jdf.sparkSession() is neccessary, as we have to use the same session as
+    # the createOrReplaceTempView command above
+    microBatchOutputDF._jdf.sparkSession().sql(f&quot;&quot;&quot;
+    MERGE INTO dev.first_dates AS t
+    USING (
+    WITH visitor_characteristics AS (
+      -- we want each vcid, landed, and the first non-null value for visitor properties. ORDER BY () IS NULL + landed gurantees NULLS last.
+      SELECT
+        visitorCookieId
+        , landed
+        , MIN(u.landed) OVER (PARTITION BY u.visitorCookieId) as firstDate
+      FROM updates AS u
+      WHERE 1 = 1
+      )
+      -- collapse to first date (one row per vcid)
+      SELECT
+        DISTINCT v.visitorCookieId
+        , v.firstDate
+        , date_format(v.firstDate, 'yyyy-MM-dd') as firstDay
+        , LEFT(v.visitorCookieId, 2) as vcid_first_two
+      FROM visitor_characteristics AS v
+      GROUP BY 1,2,3,4,5,6,7,8,9,10
+    ) AS s
+    ON (s.vcid_first_two = LEFT(t.visitor_cookie_id, 2) AND t.visitor_cookie_id = s.visitorCookieId)
+
+    WHEN MATCHED
+      AND s.vcid_first_two = LEFT(t.visitor_cookie_id, 2)
+      AND s.firstDate &amp;lt; t.first_date
+    THEN UPDATE SET t.first_date = s.firstDate, t.first_day = s.firstDay
+
+    -- only insert new values
+    WHEN NOT MATCHED THEN
+      INSERT (visitor_cookie_id
+              , first_date
+              , first_day
+              , vcid_first_two
+              )
+      VALUES (s.visitorCookieId
+              , s.firstDate
+              , s.firstDay
+              , s.vcid_first_two
+              )
+        &quot;&quot;&quot;)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We can achive this by again using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UPSERT&lt;/code&gt; with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forEachBatch&lt;/code&gt; to create a visitor log of first dates. Streaming off pageviews, we’ll window over all rows in the update, getting the first non-null value for each desired characteristic. Collapsing the data to a single row per cookie allows us to merge into existing data.&lt;/p&gt;
+
+&lt;p&gt;Though the stream should process in order, we can add an update condition to retroactively correct dates if an earlier timestamp is found. If not, we’ll insert.&lt;/p&gt;
+
+&lt;p&gt;For our user mapping upsert, we can add in a clause to check and apply the first date for pertinent rows. Now, the first row will have the desired timestamp.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;, CASE WHEN (sui.isNewVcid OR sui.isFirstTimeUid)
+                  AND sui.updateRank = sui.minUnequalUidUpdateRank
+               THEN LEAST(sui.validStartDate, sui.firstDate) ELSE sui.validStartDate END as validStartDate
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In order to assimilate our data into the desired format, a final &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MERGE INTO&lt;/code&gt; will be used once both streams have been completed. By using string formatting, we can insert timestamps to ensure only the most recent batch is inserted. Note, the logic and behavior here is slightly different than our user mapping example.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;merge_into = f&quot;&quot;&quot;
+MERGE INTO dev.visitor_lookup v
+USING (
+  WITH union_visitors AS (
+    SELECT
+      u.visitor_cookie_id
+      , u.user_id
+      , u.valid_start_date
+      , u.valid_end_date
+      , u.is_current
+
+      , u.first_date
+      , u.start_day
+      , RANK() OVER (PARTITION BY visitor_cookie_id ORDER BY valid_start_date asc) as update_rank
+    FROM dev.user_mapping u
+    WHERE 1 = 1
+      AND u.valid_start_date &amp;gt; '{max_lookup_timestamp}'
+      AND u.valid_start_date &amp;lt;= '{max_first_date_timestamp}'
+
+    UNION ALL
+
+    SELECT
+      f.visitor_cookie_id
+      , NULL as user_id
+      , f.first_date as valid_start_date
+      , NULL as valid_end_date
+      , TRUE as is_current
+
+      , f.first_date
+      , date_format(f.first_date, 'yyyy-MM-dd') as start_day
+      , 1 as update_rank
+    FROM dev.first_dates f
+    LEFT JOIN dev.user_mapping u
+      ON f.vcid_first_two = u.vcid_first_two
+      AND u.is_current
+      AND f.visitor_cookie_id = u.visitor_cookie_id
+    WHERE 1 = 1
+      AND u.visitor_cookie_id IS NULL
+      AND f.first_date &amp;gt; '{max_lookup_timestamp}'
+      AND f.first_date &amp;lt;= '{max_first_date_timestamp}'
+  )
+  -- insert all rows EXCEPT for existing vcid's with NULL user_id's
+  -- we only want to update those (next union)
+  SELECT
+    NULL as merge_key
+    , update_rank
+    , u.visitor_cookie_id
+    , u.user_id
+    , u.valid_start_date
+    , CASE WHEN u.is_current THEN NULL ELSE u.valid_end_date END as valid_end_date
+    , u.is_current
+
+    , u.start_day
+    , LEFT(u.visitor_cookie_id, 2) AS vcid_first_two
+  FROM union_visitors u
+  LEFT JOIN dev.visitor_lookup v
+    ON LEFT(u.visitor_cookie_id, 2) = v.vcid_first_two
+    AND v.is_current
+    AND v.visitor_cookie_id = u.visitor_cookie_id
+  WHERE 1 = 1
+    AND NOT (
+      u.update_rank = 1
+      AND u.user_id IS NOT NULL
+      AND v.visitor_cookie_id IS NOT NULL
+      AND v.user_id IS NULL
+            )
+
+  UNION ALL
+
+  -- dupe first update row to change existing rows
+  -- we want to update old CURRENT user_id rows and rows with a NULL user_id
+  SELECT
+    u.visitor_cookie_id as merge_key
+    , update_rank
+    , u.visitor_cookie_id
+    , u.user_id
+    , u.valid_start_date
+    , CASE WHEN u.is_current THEN NULL ELSE u.valid_end_date END as valid_end_date
+    , u.is_current
+
+    , u.start_day
+    , LEFT(u.visitor_cookie_id, 2) AS vcid_first_two
+  FROM union_visitors u
+  LEFT JOIN dev.visitor_lookup v
+    ON LEFT(u.visitor_cookie_id, 2) = v.vcid_first_two
+    AND v.is_current
+    AND v.visitor_cookie_id = u.visitor_cookie_id
+  WHERE 1 = 1
+    AND u.update_rank = 1
+    AND u.user_id IS NOT NULL
+    AND v.visitor_cookie_id IS NOT NULL
+) AS up
+ON (up.vcid_first_two = v.vcid_first_two AND up.merge_key = v.visitor_cookie_id)
+
+WHEN MATCHED
+  AND v.is_current
+  AND v.user_id IS NOT NULL
+THEN UPDATE SET
+  v.valid_end_date = up.valid_start_date - INTERVAL '1 microsecond'
+  , v.is_current = FALSE
+
+WHEN MATCHED
+  AND v.is_current
+  AND v.user_id IS NULL
+THEN UPDATE SET
+  v.valid_end_date = up.valid_end_date
+  , v.is_current = up.is_current
+  , v.user_id = up.user_id
+
+WHEN NOT MATCHED
+THEN INSERT (visitor_cookie_id
+        , user_id
+        , valid_start_date
+        , valid_end_date
+        , is_current
+        , start_day
+        , vcid_first_two
+        )
+
+VALUES (up.visitor_cookie_id
+        , up.user_id
+        , up.valid_start_date
+        , up.valid_end_date
+        , up.is_current
+        , up.start_day
+        , up.vcid_first_two
+        )
+&quot;&quot;&quot;
+
+spark.sql(merge_into)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Lastly, current row timestamps are updated&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;spark.sql(f&quot;&quot;&quot;
+            UPDATE dev.visitor_lookup
+            SET valid_end_date = '{max_first_date_timestamp}'
+            WHERE is_current
+          &quot;&quot;&quot;)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Finally, we have a working &lt;em&gt;visitor lookup&lt;/em&gt; table with all of the necessary attributes.&lt;/p&gt;
+
+&lt;h3 id=&quot;partitioning&quot;&gt;Partitioning&lt;/h3&gt;
+
+&lt;p&gt;All tables were intitally partitioned on date— this is Storyblocks’ convention for event tables. This proved quite problematic and slow for a few reasons.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;We had to disable parallelism for ordered processing of data. Partitioning on date implies that writing to multiple partitions processes multiple dates, which breaks a table like this one since we rely on ordered processing of batches.&lt;/li&gt;
+  &lt;li&gt;Most joins in our create script are on cookie. To get any benefit out of our partitioning, we needed to add range joins on both date and timestamp, which was cumbersome and confusing.&lt;/li&gt;
+  &lt;li&gt;I have fears that as we scale, there will become an increasingly skewed number of visitors by date. Partitioning by cookie ensures no partition skew, since cookies are evenly distributed.&lt;/li&gt;
+  &lt;li&gt;We can directly control the number of partitions by using 1, 2,or 3 characters of the visitor cookie. Date partitioned tables will have linearly increasing partitions.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Switching to partitioning by the first two characters of visitor cookie drastically improved the performance or our script and makes sense for the type of joins that we’ll primarily use on this table.&lt;/p&gt;
+
+&lt;h3 id=&quot;schematic&quot;&gt;Schematic&lt;/h3&gt;
+
+&lt;p&gt;I’m sure that wasn’t entirely clear, so here’s a brief diagram explaining the process:&lt;/p&gt;
+
+&lt;figure&gt;
+  &lt;img src=&quot;/assets/posts/visitor-lookup/visitor_lookup.png&quot; alt=&quot;Execution schematic&quot; /&gt;
+  &lt;figcaption&gt;&lt;i&gt;&lt;center&gt;An example SCD Type-2 entry for a visitor switching userids&lt;/center&gt;&lt;/i&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;h3 id=&quot;applications&quot;&gt;Applications&lt;/h3&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;We’re currently using the script as a part of our new &lt;em&gt;attrubition&lt;/em&gt; framework for measuring marketing spend and conversion. The output table is joined to visitor lookup to backfill user id’s and track conversions prior to registration on site. This has resulted in tangibly better tracking, picking up 65% more user sessions over our old method and having real impacts on how marketing makes spending decisions.&lt;/li&gt;
+  &lt;li&gt;The same use case can be applied to backfilling AB Testing user id’s (and it will be, hopefully)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;checks-and-tests&quot;&gt;Checks and tests&lt;/h3&gt;
+
+&lt;p&gt;There’s no doubt this is a &lt;em&gt;very very&lt;/em&gt; complex solution. Honestly, I’d prefer a simpler method and I think one &lt;em&gt;should&lt;/em&gt; exist. If we were able to process each row individually, there might be a much better way to achieve the same result.&lt;/p&gt;
+
+&lt;p&gt;Unfortunately, after much trial and error this was the best result I could come to. I periodically run some of the following checks to make sure the script is working as expected:&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Start lag:&lt;/strong&gt; for each visitor cookie, is the previous valid_end_date equal to the valid_start_date - 1 microsecond?&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;%sql
+WITH start_lag AS (
+SELECT
+  visitor_cookie_id
+  , valid_start_date
+  , valid_end_date
+  , LAG(valid_end_date) OVER (PARTITION BY visitor_cookie_id ORDER BY valid_start_date ASC) as start_lag
+FROM dev.visitor_lookup
+WHERE 1 = 1
+  AND user_id IS NOT NULL
+)
+SELECT
+  visitor_cookie_id
+  , valid_start_date
+  , valid_end_date
+  , start_lag
+FROM start_lag AS sl
+WHERE 1 = 1
+  AND start_lag IS NOT NULL AND valid_end_date IS NOT NULL AND start_lag &amp;lt;&amp;gt; valid_start_date - INTERVAL '1 microsecond'
+  AND start_lag &amp;lt; current_date - 1
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;Current count:&lt;/strong&gt; does each cookie have only one current row?&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;%sql
+SELECT
+  visitor_cookie_id
+  , COUNT(CASE WHEN is_current THEN visitor_cookie_id END) as current_count
+FROM dev.visitor_lookup
+WHERE 1 = 1
+GROUP BY 1
+HAVING current_count &amp;lt;&amp;gt; 1
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;Start dates:&lt;/strong&gt; are there duplicated start dates for any cookies? &lt;em&gt;Note: there is one cookie that has two start dates… This is pretty bizarre, but it happens even when I rebuild the table. I’m not concerned given the rarity, but it is curious.&lt;/em&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;%sql
+SELECT
+  visitor_cookie_id
+  , valid_start_date
+  , COUNT(*) as current_count
+FROM dev.visitor_lookup
+WHERE 1 = 1
+GROUP BY 1,2
+HAVING current_count &amp;lt;&amp;gt; 1
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;End dates:&lt;/strong&gt; are any end dates before start dates? &lt;em&gt;Again, for the same cookie there are two user id’s with end dates one microsecond prior to start. It might be worth investigating the behavior of this visitor to find out how this happened!&lt;/em&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;%sql
+SELECT
+  *
+FROM dev.visitor_lookup
+WHERE 1 = 1
+  AND valid_end_date &amp;lt; valid_start_date
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name>Matt Palmer</name><email>m@ppal.me</email></author><category term="data-eng" /><summary type="html">Background Background</summary></entry><entry><title type="html">How Git works</title><link href="/studies/2021/03/01/how-git-works.html" rel="alternate" type="text/html" title="How Git works" /><published>2021-03-01T00:00:00+00:00</published><updated>2021-03-01T00:00:00+00:00</updated><id>/studies/2021/03/01/how-git-works</id><content type="html" xml:base="/studies/2021/03/01/how-git-works.html">&lt;p&gt;&lt;strong&gt;Note:&lt;/strong&gt; This is a pretty rough/unpolished guide I wrote while following a &lt;a href=&quot;https://www.udemy.com/course/git-and-github-complete-guide/&quot;&gt;Udemy course&lt;/a&gt;. I found the first half of the course to be very helpful and interesting, while the latter half was a bit longwinded and unnecessary. For anyone that wants a fundamental understanding of Git, I think it’s of great value.&lt;/p&gt;
+
+&lt;ul id=&quot;markdown-toc&quot;&gt;
+  &lt;li&gt;&lt;a href=&quot;#brief-introduction-to-shell&quot; id=&quot;markdown-toc-brief-introduction-to-shell&quot;&gt;(Brief) Introduction to Shell&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#git-under-the-hood&quot; id=&quot;markdown-toc-git-under-the-hood&quot;&gt;Git under the hood&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#git-vs-github&quot; id=&quot;markdown-toc-git-vs-github&quot;&gt;Git vs. GitHub&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#initializing-a-new-git-repo&quot; id=&quot;markdown-toc-initializing-a-new-git-repo&quot;&gt;Initializing a new git repo&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#json-vs-git-databases&quot; id=&quot;markdown-toc-json-vs-git-databases&quot;&gt;JSON vs. Git Databases&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#what-is-a-hash-function&quot; id=&quot;markdown-toc-what-is-a-hash-function&quot;&gt;What is a Hash function?&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#hash-function-overview&quot; id=&quot;markdown-toc-hash-function-overview&quot;&gt;Hash function overview.&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#contents-of-git-objects&quot; id=&quot;markdown-toc-contents-of-git-objects&quot;&gt;Contents of Git objects&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#tree-objects-in-git&quot; id=&quot;markdown-toc-tree-objects-in-git&quot;&gt;Tree objects in Git&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#examining-a-tree-object&quot; id=&quot;markdown-toc-examining-a-tree-object&quot;&gt;Examining a tree object&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#overview-of-file-distribution&quot; id=&quot;markdown-toc-overview-of-file-distribution&quot;&gt;Overview of file distribution&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#basic-git-ops&quot; id=&quot;markdown-toc-basic-git-ops&quot;&gt;Basic Git ops&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#creating-a-commit&quot; id=&quot;markdown-toc-creating-a-commit&quot;&gt;Creating a commit&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#manually-moving-files-from-working-dir-to-repo&quot; id=&quot;markdown-toc-manually-moving-files-from-working-dir-to-repo&quot;&gt;Manually moving files from working-dir to repo&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#git-branches--head&quot; id=&quot;markdown-toc-git-branches--head&quot;&gt;Git branches &amp;amp; head&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#what-is-a-branch&quot; id=&quot;markdown-toc-what-is-a-branch&quot;&gt;What is a branch?&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#what-is-head&quot; id=&quot;markdown-toc-what-is-head&quot;&gt;What is HEAD?&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#checking-out-a-specific-commit&quot; id=&quot;markdown-toc-checking-out-a-specific-commit&quot;&gt;Checking out a specific commit&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#git-branch-management&quot; id=&quot;markdown-toc-git-branch-management&quot;&gt;Git Branch management&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#cloning-exploring-and-modifying-public-repos&quot; id=&quot;markdown-toc-cloning-exploring-and-modifying-public-repos&quot;&gt;Cloning, exploring, and modifying public repos&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#git-diff&quot; id=&quot;markdown-toc-git-diff&quot;&gt;Git diff&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#merging-branches--merge-conflicts&quot; id=&quot;markdown-toc-merging-branches--merge-conflicts&quot;&gt;Merging branches &amp;amp; merge conflicts&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#git-push-fetch-and-pull&quot; id=&quot;markdown-toc-git-push-fetch-and-pull&quot;&gt;Git push, fetch, and pull&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#git-tags&quot; id=&quot;markdown-toc-git-tags&quot;&gt;Git tags&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#staging-vs-production&quot; id=&quot;markdown-toc-staging-vs-production&quot;&gt;&lt;strong&gt;Staging vs. Production&lt;/strong&gt;&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#semantic-versioning&quot; id=&quot;markdown-toc-semantic-versioning&quot;&gt;Semantic Versioning&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#rebasing&quot; id=&quot;markdown-toc-rebasing&quot;&gt;Rebasing&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#rebasing-steps&quot; id=&quot;markdown-toc-rebasing-steps&quot;&gt;Rebasing Steps&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#ignoring-files-in-git&quot; id=&quot;markdown-toc-ignoring-files-in-git&quot;&gt;Ignoring files in Git&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#basic-gitignore-rules&quot; id=&quot;markdown-toc-basic-gitignore-rules&quot;&gt;Basic gitignore rules&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#common-practices--templates&quot; id=&quot;markdown-toc-common-practices--templates&quot;&gt;Common practices &amp;amp; templates&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#detached-head&quot; id=&quot;markdown-toc-detached-head&quot;&gt;Detached HEAD&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Really cool interactive Git tool: &lt;a href=&quot;https://learngitbranching.js.org/&quot;&gt;https://learngitbranching.js.org/&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Note: this guide is derived from the Udemy course: &lt;a href=&quot;https://www.udemy.com/course/git-and-github-complete-guide/&quot;&gt;https://www.udemy.com/course/git-and-github-complete-guide/&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;brief-introduction-to-shell&quot;&gt;(Brief) Introduction to Shell&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The &lt;em&gt;Terminal&lt;/em&gt; is just a graphical user interface that grants access to the &lt;em&gt;shell.&lt;/em&gt; The default shell on Mac is &lt;em&gt;Bash&lt;/em&gt; the default shell on Windows is &lt;em&gt;PowerShell&lt;/em&gt;. The shell is a program that takes keyboard commands and passes them to the OS to be executed.&lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Not going to delve into the shell too much here, but it allows us to interact with Git. Check out &lt;em&gt;The Linux Command Line— A Complete Introduction&lt;/em&gt; by William Shotts for all you could every want to know about the shell.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;iTerm is a custom terminal for MacOS. ZSH is a custom shell for MacOS. oh my zsh is a framework for managing custom shells. Besides looking better, these tools can be used to customize and improve the functionality of the user’s terminal &amp;amp; shell.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Basic shell commands (many more in the book)
+    &lt;ul&gt;
+      &lt;li&gt;mkdir - make directory&lt;/li&gt;
+      &lt;li&gt;ls - list files and directories&lt;/li&gt;
+      &lt;li&gt;cd - change directory&lt;/li&gt;
+      &lt;li&gt;. - alias of current directory&lt;/li&gt;
+      &lt;li&gt;.. - alias of parent directory&lt;/li&gt;
+      &lt;li&gt;nano - edit file&lt;/li&gt;
+      &lt;li&gt;clear - clear terminal&lt;/li&gt;
+      &lt;li&gt;Tab - autocomplete&lt;/li&gt;
+      &lt;li&gt;echo - print to terminal&lt;/li&gt;
+      &lt;li&gt;man - help on specific command&lt;/li&gt;
+      &lt;li&gt;touch - create new file, change file permissions&lt;/li&gt;
+      &lt;li&gt;&amp;gt; - write to file&lt;/li&gt;
+      &lt;li&gt;&amp;gt;&amp;gt; - append to file&lt;/li&gt;
+      &lt;li&gt;cat - list contents of file&lt;/li&gt;
+      &lt;li&gt;rm - remove files and directories&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;git-under-the-hood&quot;&gt;Git under the hood&lt;/h2&gt;
+
+&lt;h3 id=&quot;git-vs-github&quot;&gt;Git vs. GitHub&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;Git&lt;/strong&gt; is a distributed version-control system, it can track changes in files in any folder, called a &lt;em&gt;repository.&lt;/em&gt; Really, it’s just a special file system.&lt;/p&gt;
+
+&lt;p&gt;Git has it’s own file structure in which each file is stored in a separate document with it’s own hash. In that way, git is a persistent &lt;em&gt;hash map&lt;/em&gt; that stores key-value pairs— key = hash, value = content of file.&lt;/p&gt;
+
+&lt;p&gt;Git is designed to be used without an internet connection, but &lt;strong&gt;Github&lt;/strong&gt; is used to manage local git repositories— it’s a repository hosting service. Github allows the user to backup local repos, but also unlocks the potential for collaboration among teams.&lt;/p&gt;
+
+&lt;h3 id=&quot;initializing-a-new-git-repo&quot;&gt;Initializing a new git repo&lt;/h3&gt;
+
+&lt;p&gt;&lt;em&gt;git init&lt;/em&gt; serves to create an empty git repo with you can then add files to. Behind the scenes, a new hidden &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.git&lt;/code&gt; folder is created. Inside the hidden folder are a number of files and directories containing information relative to the repo.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_1.png&quot; alt=&quot;/assets/posts/git/IMG_1.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Git has it’s own file structure in which all information goes into the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;objects&lt;/code&gt; folder. There are four object types. These can be manipulated with low level commands like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git hash-object&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git cat-file&lt;/code&gt;.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;Blob&lt;/p&gt;
+
+    &lt;p&gt;Files. Any files with any extensions. Video, pictures, text, etc.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Tree&lt;/p&gt;
+
+    &lt;p&gt;Directory information. Tree information may be a set of blobs or a set of blobs and other trees.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Commit&lt;/p&gt;
+
+    &lt;p&gt;Commits, i.e. versions are stored in git.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Annotated Tag&lt;/p&gt;
+
+    &lt;p&gt;Persistent text pointers which refer to specific commits.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;A new object can be created with the command &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git hash-object -w&lt;/code&gt;. This creates a git object and writes it into a repository, where it can then be examined with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git cat-file&lt;/code&gt;. The command &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git mktree&lt;/code&gt; is used to make new trees in a repo.&lt;/p&gt;
+
+&lt;p&gt;For example, the following commands initialize a new object— note how the different quotations generate the same string output.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_2.png&quot; alt=&quot;/assets/posts/git/IMG_2.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;No changes are present in the folder structure until the final command when &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-w&lt;/code&gt; is passed. Now, a new object exists. Note how this object is named: b7 + the rest of the string above. The string is what’s known as a hash.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_3.png&quot; alt=&quot;/assets/posts/git/IMG_3.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;For git, the folder name + file name = hash. Hash is generated from file input.&lt;/p&gt;
+
+&lt;h3 id=&quot;json-vs-git-databases&quot;&gt;JSON vs. Git Databases&lt;/h3&gt;
+
+&lt;p&gt;JSON (JavaScript Object Notation) is a common database format in programming where data is stored in key-value pairs. For example, in the following, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;id&lt;/code&gt; key has a value of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;file&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-jsx highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;menu&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;File&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;popup&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;menuitem&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;New&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;onclick&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;CreateNewDoc()&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;Open&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;onclick&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;OpenDoc()&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;Close&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;onclick&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;CloseDoc()&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Git databases also store key-value pairs, with the file hash as a key and the contents as a value. The difference comes from the fact that the &lt;em&gt;same hash can be generated from different inputs,&lt;/em&gt; as demonstrated from the screenshot above where “Hello, Git” &amp;amp; ‘Hello, Git’ returned the same hash.&lt;/p&gt;
+
+&lt;h3 id=&quot;what-is-a-hash-function&quot;&gt;What is a Hash function?&lt;/h3&gt;
+
+&lt;p&gt;A hash function is one that takes any, variable length input and returns a fixed length hash. In the example above, we passed a short string to generate a hash, but hashes can be generated for any size file from a few characters to large video files.&lt;/p&gt;
+
+&lt;p&gt;Thus, an important characteristic of the hash function is that &lt;strong&gt;merely knowing the hash does not allow you to recursively generate inputs&lt;/strong&gt; (how could we rebuild a video from a limited fixed length string?) That is, hash functions are &lt;em&gt;one way functions&lt;/em&gt;. That’s why passwords are stored in hashes for many websites.&lt;/p&gt;
+
+&lt;p&gt;The other important characteristic of hash functions is that the same input will always produce the same hash. If you were to run the same command &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;echo &quot;Hello, Git&quot; | git hash-object --stdin&lt;/code&gt;, you should return the same hash.&lt;/p&gt;
+
+&lt;p&gt;Another characteristic of hash functions is that even a small change, e.g. adding a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;!&lt;/code&gt;to the end of the string, will produce an entirely different hash. That’s why hashes are one-way: you can’t reverse-engineer input.&lt;/p&gt;
+
+&lt;h3 id=&quot;hash-function-overview&quot;&gt;Hash function overview.&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Common has functions you’ve probably heard of
+    &lt;ul&gt;
+      &lt;li&gt;MD5 - 128 bit&lt;/li&gt;
+      &lt;li&gt;SHA1 - 160 bit&lt;/li&gt;
+      &lt;li&gt;SHA256 - 256 bit&lt;/li&gt;
+      &lt;li&gt;SHA384 - 384 bit&lt;/li&gt;
+      &lt;li&gt;SHA512 - 512 bit&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Git uses the SHA1 algorithm, which creates strings that are 160 bits long in hexadecimal format. Hexadecimal format contains the following characters &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0123456789ABCDEF&lt;/code&gt;, where capitalization is not considered. It is a &lt;em&gt;base 16&lt;/em&gt; representation, as compared to binary, which is base 2 (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;01&lt;/code&gt;).&lt;/p&gt;
+
+&lt;p&gt;By now, it may be apparent that there is some limit to the number of files that can be stored in the same repository— if a hash function generates a new output for any given input, the number of unique outputs must be limited by the different hash hexadecimal combinations. Two important questions are &lt;em&gt;How many files can one store in a Git repo?&lt;/em&gt; and &lt;em&gt;What is the probability of generating the same exact hash for different inputs?&lt;/em&gt;&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Given that a hash is a base 16 representation, the total number of combinations is equal to $2^{160} = 1.46 \times 10^{48}$, since SHA1 is &lt;em&gt;160 bits long&lt;/em&gt; which corresponds to the binary representation in which there are only two combinations, 0 &amp;amp; 1. So I think it’s safe to say this isn’t something to worry about. 🙂&lt;/li&gt;
+  &lt;li&gt;For repeated trials of an event with the same probability, e.g. repeatedly rolling dice, probabilities must be multiplied to obtain an overall result. The odds of rolling two consecutive 6’s is $\frac{1}{6} \times \frac{1}{6} = \frac{1}{36}$. For completeness, the probability of rolling numbers that differ, e.g. 4 &amp;amp; 5, we multiply the answer by two, since there are two outcomes in which we roll that pair (each die can take on a 4 or 5, respectively).&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Given that we know the total number of SHA1 hashes, the calculation is similar. We must multiply two probabilities $2^{-160} \times 2^{-160} = 2^{-320} = 4.68 \times 10^{-97}$. It’s safe to say that we don’t have to worry about this either.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;Basic &lt;em&gt;git cat-file&lt;/em&gt; options&lt;/p&gt;
+
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git cat-file -p &amp;lt;hash&amp;gt;&lt;/code&gt; - contents of object&lt;/p&gt;
+
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git cat-file -s &amp;lt;hash&amp;gt;&lt;/code&gt; - size of object&lt;/p&gt;
+
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git cat-file -t &amp;lt;hash&amp;gt;&lt;/code&gt; - type of object&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Basic &lt;em&gt;git hash-object&lt;/em&gt; options&lt;/p&gt;
+
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git hash-object &amp;lt;file&amp;gt; -w&lt;/code&gt; - write a file to the repo&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;contents-of-git-objects&quot;&gt;Contents of Git objects&lt;/h3&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_4.png&quot; alt=&quot;/assets/posts/git/IMG_4.png&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Each blob stored in an objects folder has a name, but that name is derived from the SHA1 hash.&lt;/li&gt;
+  &lt;li&gt;Note there is no &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git cat-file&lt;/code&gt; command to return the filename… It isn’t stored!&lt;/li&gt;
+  &lt;li&gt;Git objects are comprised of three fields and a delimiter: content + object type + object length = hash .&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;For example, recall our earlier hash. We can reproduce the same result with the following command&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_5.png&quot; alt=&quot;/assets/posts/git/IMG_5.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Thus, for our original command &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;echo &quot;Hello, Git&quot;&lt;/code&gt; we know git is storing&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;blob&lt;/code&gt; - the type&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;11&lt;/code&gt; - the length&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;\0&lt;/code&gt; - the delimiter&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Hello, Git&lt;/code&gt; - the contents!&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;NOTE: if using terminal, make sure to pass &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;echo -e&lt;/code&gt; to interpret backslash characters.&lt;/p&gt;
+
+&lt;h3 id=&quot;tree-objects-in-git&quot;&gt;Tree objects in Git&lt;/h3&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_6.png&quot; alt=&quot;/assets/posts/git/IMG_6.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Trees are stored as links to blobs or other trees, as above. Trees store file names of the git blobs themselves, which is why filenames need not be stored in git blobs!&lt;/p&gt;
+
+&lt;p&gt;The structure goes like: permission, object type, hash, name. In order to use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mktree&lt;/code&gt; command, one only need create a txt file and list the objects as formatted in the above image.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_7.png&quot; alt=&quot;/assets/posts/git/IMG_7.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;By passing the two blob objects with permissions and their corresponding hashes to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git mktree&lt;/code&gt;, we get a tree object with the hash &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;3b95df0ac6365c72e9b0ff6c449645c87e6e1159&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_8.png&quot; alt=&quot;/assets/posts/git/IMG_8.png&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Git objects permissions&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;examining-a-tree-object&quot;&gt;Examining a tree object&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We can use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git cat-file -p&lt;/code&gt; to examine the contents of our tree— which should be what we passed in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;temp-tree.txt&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;The size &amp;amp; type can be found with the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-s&lt;/code&gt; &amp;amp; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-p&lt;/code&gt; parameters&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_9.png&quot; alt=&quot;/assets/posts/git/IMG_9.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_10.png&quot; alt=&quot;/assets/posts/git/IMG_10.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;So, using only low-level commands, we’ve created the following file-structure in our repository:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_11.png&quot; alt=&quot;/assets/posts/git/IMG_11.png&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;overview-of-file-distribution&quot;&gt;Overview of file distribution&lt;/h3&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_12.png&quot; alt=&quot;/assets/posts/git/IMG_12.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Git uses a &lt;em&gt;Staging Area&lt;/em&gt; or &lt;em&gt;Index&lt;/em&gt; to transition files from the working directory to the repository or restore them from the repository to the working directory. Using the command &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git ls-files&lt;/code&gt; we can examine the staging area.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git read-tree &amp;lt;hash&amp;gt;&lt;/code&gt; is used to move files from the repository to the staging area. Using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;read-tree&lt;/code&gt; moves the tree and all files therein to staging. For example, to move the tree we created above:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_13.png&quot; alt=&quot;/assets/posts/git/IMG_13.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;You can see &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ls-files&lt;/code&gt; returns those in our tree. The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-s&lt;/code&gt; parameter allows a list view, which shows permissions, a hash, a &lt;em&gt;zero&lt;/em&gt; indicating that these files in staging are identical to those in the repository, and the file names.&lt;/p&gt;
+
+&lt;p&gt;Note when using read tree, the terminal indicates a change in the repository. The yellow highlight means that there are uncommitted changes in master (the other screenshots don’t show this b/c I deviated from directions).&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_14.png&quot; alt=&quot;/assets/posts/git/IMG_14.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git checkout-index -a&lt;/code&gt; , we can grab all of the files in the staging area and move them to the working directory.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_15.png&quot; alt=&quot;/assets/posts/git/IMG_15.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;These are the steps to manually move files from a repository to a staging area and recreate the same files in a working directory!&lt;/p&gt;
+
+&lt;h2 id=&quot;basic-git-ops&quot;&gt;Basic Git ops&lt;/h2&gt;
+
+&lt;p&gt;Since git is a distributed version control system, author info is reported in each commit. User information can be set with the following commands&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;Set author name&lt;/p&gt;
+
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git config --global user.name &amp;lt;Name&amp;gt;&lt;/code&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Set author email&lt;/p&gt;
+
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git config --global user.email &amp;lt;Email&amp;gt;&lt;/code&gt;&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;creating-a-commit&quot;&gt;Creating a commit&lt;/h3&gt;
+
+&lt;p&gt;I would be remiss if I didn’t at least mention how to make a commit. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git commit -m&lt;/code&gt; moves items from the staging area to the repository with a message. Use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git status&lt;/code&gt; to see, you guessed it, the status of the repo.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_16.png&quot; alt=&quot;/assets/posts/git/IMG_16.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Note we now have a new git object, it’s our commit! The commit has a pointer to the tree we changed, as well as author information and the commit message.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_17.png&quot; alt=&quot;/assets/posts/git/IMG_17.png&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;manually-moving-files-from-working-dir-to-repo&quot;&gt;Manually moving files from working-dir to repo&lt;/h3&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_18.png&quot; alt=&quot;/assets/posts/git/IMG_18.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In the previous example, we created two blobs and a tree in the repo and moved them all across the index to the working directory, creating a commit. But what about the more natural flow— moving from the working directory, to staging, to the repo?&lt;/p&gt;
+
+&lt;p&gt;That is achieved with the more common git commands, which I’m sure you’re familiar with:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;Basic Git commands&lt;/p&gt;
+
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git status&lt;/code&gt; - current state of the repository&lt;/p&gt;
+
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git add&lt;/code&gt; - adds files to the staging area (from working directory)&lt;/p&gt;
+
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git commit&lt;/code&gt; - writes changes to git repository (creates commit object)&lt;/p&gt;
+
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git log&lt;/code&gt; - history of changes (commits)&lt;/p&gt;
+
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git checkout&lt;/code&gt; - checkout commit or branch&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;First, we create a new file in our repository &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nano file3.txt&lt;/code&gt; and add some contents.&lt;/p&gt;
+
+&lt;p&gt;Next, we add the new file to the staging area &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git add&lt;/code&gt;. Until we add the file, it will be &lt;em&gt;untracked.&lt;/em&gt; There are four possible statuses for git files.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;Git file tracking statuses&lt;/p&gt;
+
+    &lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_19.png&quot; alt=&quot;/assets/posts/git/IMG_19.png&quot; /&gt;&lt;/p&gt;
+
+    &lt;ul&gt;
+      &lt;li&gt;
+        &lt;p&gt;Untracked&lt;/p&gt;
+
+        &lt;p&gt;Any new files added to a working directory will be untracked until added to the staging area.&lt;/p&gt;
+
+        &lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_20.png&quot; alt=&quot;/assets/posts/git/IMG_20.png&quot; /&gt;&lt;/p&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;p&gt;Unmodified&lt;/p&gt;
+
+        &lt;p&gt;For an unmodified file, we must commit staged files using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git commit&lt;/code&gt;. Unmodified files can be removed or ignored from git.&lt;/p&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;p&gt;Modified&lt;/p&gt;
+
+        &lt;p&gt;Changing a file in the working directory that is already tracked will change it’s state to modified.&lt;/p&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;p&gt;Staged&lt;/p&gt;
+
+        &lt;p&gt;To move a file from untracked to a staged state, use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git add&lt;/code&gt; , this initiates file tracking.&lt;/p&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git status&lt;/code&gt; can be used to investigate the status of files in a working directory.&lt;/p&gt;
+
+&lt;p&gt;Finally, with the file in the staging area, we use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git commit&lt;/code&gt; to move it to the repo.&lt;/p&gt;
+
+&lt;p&gt;Should a staged file want to be ignored, we can use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git rm --cached &amp;lt;filename&amp;gt;&lt;/code&gt; to remove the file from staging and untrack it.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_21.png&quot; alt=&quot;/assets/posts/git/IMG_21.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git log&lt;/code&gt; can be used to see a history of commits&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_22.png&quot; alt=&quot;/assets/posts/git/IMG_22.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git cat-file -p &amp;lt;hash&amp;gt;&lt;/code&gt; is useful for illustrating how commits are linked. Invoking the command on our second command returns a tree &amp;amp; parent— the latter being a pointer back to the first commit. This can be confirmed with the same command on that hash.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_23.png&quot; alt=&quot;/assets/posts/git/IMG_23.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;So, in commit objects, Git is keeping track of hashes, but also linking back to previous commits. This allows for reversion to different project snapshots!&lt;/p&gt;
+
+&lt;h2 id=&quot;git-branches--head&quot;&gt;Git branches &amp;amp; head&lt;/h2&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_24.png&quot; alt=&quot;/assets/posts/git/IMG_24.png&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;what-is-a-branch&quot;&gt;What is a branch?&lt;/h3&gt;
+
+&lt;p&gt;A branch is just a &lt;em&gt;text reference&lt;/em&gt; to a commit.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Default branch is &lt;strong&gt;master&lt;/strong&gt;&lt;/li&gt;
+  &lt;li&gt;Multiple branches can exist in the same repo&lt;/li&gt;
+  &lt;li&gt;Pointers for all branches are located in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.git/refs/heads&lt;/code&gt; folder&lt;/li&gt;
+  &lt;li&gt;Only the current branch tracks new commits&lt;/li&gt;
+  &lt;li&gt;The branch pointer moves automatically after every new commit&lt;/li&gt;
+  &lt;li&gt;Use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git checkout &amp;lt;branch&amp;gt;&lt;/code&gt; to change the branch&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Looking in the folder where branches are stored, we can see our project only has one branch &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;master&lt;/code&gt; . Examining the file contents, we find a pointer to the most recent commit!&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_25.png&quot; alt=&quot;/assets/posts/git/IMG_25.png&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;what-is-head&quot;&gt;What is HEAD?&lt;/h3&gt;
+
+&lt;p&gt;Q: How does Git know which branch is current?&lt;/p&gt;
+
+&lt;p&gt;A: That’s where HEAD is used. HEAD is a pointer or reference to the currently checked-out branch in commit.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Head is locally significant— if you work in a distributed project, you can move head locally without effecting others&lt;/li&gt;
+  &lt;li&gt;The HEAD pointer can be found in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.git/HEAD&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;The default pointer is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ref&lt;/code&gt;: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;refs/heads/master&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;To change reference to a specific branch use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git checkout &amp;lt;branch&amp;gt;&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;To change reference to a specific commit use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git checkout &amp;lt;sha1&amp;gt;&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;As you can see below, HEAD points to master, which points to the second commit!&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_26.png&quot; alt=&quot;/assets/posts/git/IMG_26.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;But what if we delete all of our files and commit them?&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_27.png&quot; alt=&quot;/assets/posts/git/IMG_27.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;While there are no files in our repository, all of the old Git objects still exist in their designated folder— Git stores the entire history of the project.&lt;/p&gt;
+
+&lt;h3 id=&quot;checking-out-a-specific-commit&quot;&gt;Checking out a specific commit&lt;/h3&gt;
+
+&lt;p&gt;In order to move HEAD to a different version of the project, we use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git checkout &amp;lt;sha1&amp;gt;&lt;/code&gt;, which moves the HEAD pointer. There are a few ways to find a sha1— GitHub is probably the easiest (only the first few characters are needed):&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_28.png&quot; alt=&quot;/assets/posts/git/IMG_28.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Another option is to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git cat-file -p &amp;lt;sha1&amp;gt;&lt;/code&gt; of the current master— this will show &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;tree&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;parent&lt;/code&gt;, author, and other info. The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;parent&lt;/code&gt; refers to the prior commit, which is what we’re after:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_29.png&quot; alt=&quot;/assets/posts/git/IMG_29.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;For example, to undo the delete operation:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_30.png&quot; alt=&quot;/assets/posts/git/IMG_30.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;But what is a &lt;em&gt;detached HEAD state&lt;/em&gt;? (it certainly doesn’t sound good)&lt;/p&gt;
+
+&lt;p&gt;Normally, HEAD points to the branch. For example HEAD → master → commit. Since we checked out a commit, HEAD now points directly to it: HEAD → commit.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_31.png&quot; alt=&quot;/assets/posts/git/IMG_31.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;And now, voila! We have our three files back in our original directory &amp;amp; staging area.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_32.png&quot; alt=&quot;/assets/posts/git/IMG_32.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Note: since we moved back to the second commit, we’ll see no reference to the third commit in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git log&lt;/code&gt;, since the second commit exists unaware of that future state.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_33.png&quot; alt=&quot;/assets/posts/git/IMG_33.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;To return to our third commit, we simply type &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git checkout master&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;git-branch-management&quot;&gt;Git Branch management&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git branch&lt;/code&gt; - list all local branches.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git branch &amp;lt;name&amp;gt;&lt;/code&gt; - create new branch.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git checkout &amp;lt;name&amp;gt;&lt;/code&gt; - checkout specific branch.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git branch -d &amp;lt;name&amp;gt;&lt;/code&gt; - delete a merged (or uncommitted) branch.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git branch -D &amp;lt;name&amp;gt;&lt;/code&gt; - delete any branch (force delete).&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git branch -m &amp;lt;old&amp;gt; &amp;lt;new&amp;gt;&lt;/code&gt; - rename specific branch.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git checkout -b &amp;lt;branch name&amp;gt;&lt;/code&gt; - shortcut to create &amp;amp; checkout a branch.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Note: when creating a new branch, we’re essentially cloning the current branch. As an example, we can see that the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sha1&lt;/code&gt; of a recently created branch and &lt;em&gt;master&lt;/em&gt; are identical— again, that’s because branches are just pointers to specific commits.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_34.png&quot; alt=&quot;/assets/posts/git/IMG_34.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Checking out this new branch replaces the contents of the HEAD file to point to our temp branch instead of &lt;em&gt;master&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_35.png&quot; alt=&quot;/assets/posts/git/IMG_35.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;An interesting point:&lt;/strong&gt; if we create a new branch with a new file which has identical contents to one of our earlier files &lt;em&gt;“Hello, Git”&lt;/em&gt; we will find that Git reuses the same blob, even if the file name differs.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_36.png&quot; alt=&quot;/assets/posts/git/IMG_36.png&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;cloning-exploring-and-modifying-public-repos&quot;&gt;Cloning, exploring, and modifying public repos&lt;/h2&gt;
+
+&lt;p&gt;Each GitHub repository is stored under an account— most repo&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_37.png&quot; alt=&quot;/assets/posts/git/IMG_37.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;There are multiple methods to obtain the code for a repo. GitHub allows you to clone with HTTPS, SSH, or GitHub CLI, Open with GitHub Desktop, or Download ZIP. One pitfall of downloading a zip of the repo is that the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.git&lt;/code&gt; folder &lt;em&gt;will not be included.&lt;/em&gt; Hence, if you want to checkout different commits, branches, etc. it’s best to clone.&lt;/p&gt;
+
+&lt;p&gt;Cloning is as simple as:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_38.png&quot; alt=&quot;/assets/posts/git/IMG_38.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now, the folder &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;hello-world&lt;/code&gt; is stored locally, but is also under Git control on the &lt;em&gt;master&lt;/em&gt; branch. Additionally, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.git&lt;/code&gt; folder is present and the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git log&lt;/code&gt; contains the entire project history.&lt;/p&gt;
+
+&lt;p&gt;Once a repo is cloned, we can then create a new branch, make adjustments, add files to staging, and commit to a local version… Just as before.&lt;/p&gt;
+
+&lt;p&gt;In the following example, I checkout a new branch &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;new-feature&lt;/code&gt; and make a commit. Notice the Git log:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_39.png&quot; alt=&quot;/assets/posts/git/IMG_39.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;While &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;new-feature&lt;/code&gt; is HEAD, the previous commit is labeled &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;origin/master&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;origin/HEAD&lt;/code&gt;, and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;master&lt;/code&gt;. This is because that commit is the last one pulled from the remote repo (origin). Since we pulled from remote, our local repository and the remote repository are connected— we can see the status of remote as of the pull.&lt;/p&gt;
+
+&lt;h3 id=&quot;git-diff&quot;&gt;Git diff&lt;/h3&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_40.png&quot; alt=&quot;/assets/posts/git/IMG_40.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git diff&lt;/code&gt; command presents a file summarizing the difference between two files in a commit. The structure is as follows:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;The two files with a difference.&lt;/li&gt;
+  &lt;li&gt;The SHA1 hashes of each file.&lt;/li&gt;
+  &lt;li&gt;A maker indicating the start of the changed section, for example &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@@-3,6 +3,8 @@&lt;/code&gt;.
+    &lt;ul&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-3&lt;/code&gt; - the first line where changes began in the old file&lt;/li&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;6&lt;/code&gt; - the quantity of lines in a given section in the old file.&lt;/li&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;+3&lt;/code&gt; - first line in new file&lt;/li&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;8&lt;/code&gt; - total quantity of lines in the new file&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;The changes.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_41.png&quot; alt=&quot;/assets/posts/git/IMG_41.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In the above image, -3 shows the start of the old file (left column) and total number of lines (left column 3 to 8 is 6 total lines). +3 is the start of the new file (right column) and 8 is the total number of new lines (3 to 10 is 8 lines).&lt;/p&gt;
+
+&lt;h2 id=&quot;merging-branches--merge-conflicts&quot;&gt;Merging branches &amp;amp; merge conflicts&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;Merge steps:&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Create new feature branch from the main branch&lt;/li&gt;
+  &lt;li&gt;Make changes in the new branch and commit them&lt;/li&gt;
+  &lt;li&gt;Checkout main branch (receiving branch)&lt;/li&gt;
+  &lt;li&gt;Merge feature branch to the current receiving branch &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git merge &amp;lt;feature-branch&amp;gt;&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;Why is Merging Needed?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;We often consider &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;master&lt;/code&gt; to be the “main” branch, which we then branch off to work on features or changes. On a development team, new code is constantly being added to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;master&lt;/code&gt; in parallel. So how do you incorporate your changes while allowing your teammates to continue working on and updating &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;master&lt;/code&gt;? That’s where merging comes in. There are two main types of merge to discuss.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Fast-forward merge
+    &lt;ul&gt;
+      &lt;li&gt;In a fast forward merge, your feature is ahead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;master&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;master&lt;/code&gt; has no other commits. The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;master&lt;/code&gt; branch pointer is simply moved to your commit— your branch becomes &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;master&lt;/code&gt; and the feature branch may be deleted. This is a very straightforward and simple merge.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Three-way merge&lt;/p&gt;
+
+    &lt;ul&gt;
+      &lt;li&gt;
+        &lt;p&gt;In a three-way merge, your feature is behind &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;master&lt;/code&gt;. You want to merge, but you &lt;em&gt;don’t&lt;/em&gt; want to lose updates made since checkout. In these cases, git finds the nearest &lt;em&gt;ancestor&lt;/em&gt; (common commit between both branches).&lt;/p&gt;
+
+        &lt;ul&gt;
+          &lt;li&gt;To perform such a merge, git takes the ancestor, applies changes, and merges your feature. In the process, it moves HEAD to the new commit.&lt;/li&gt;
+          &lt;li&gt;
+            &lt;p&gt;The new commit has two parents— the new ancestor branch and the feature. See the images below for before/after:&lt;/p&gt;
+
+            &lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_42.png&quot; alt=&quot;/assets/posts/git/IMG_42.png&quot; /&gt;&lt;/p&gt;
+
+            &lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_43.png&quot; alt=&quot;/assets/posts/git/IMG_43.png&quot; /&gt;&lt;/p&gt;
+          &lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;What is a Merge Conflict?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Merge conflicts can appear when the same files are edited in multiple branches.&lt;/li&gt;
+  &lt;li&gt;Merge conflicts do not exist in fast-forward merges, where no other commits are made after HEAD, since there is no way for conflicts to appear.
+    &lt;ul&gt;
+      &lt;li&gt;Hence, merge conflicts can only arise in three way merges&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Conflicts must be resolved manually before changes can be merged.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;Resolving Merge Conflicts&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;To reiterate, Git is a distributed version-control system while GitHub is a repository hosting service, designed to collaborate on and share Git repositories.&lt;/p&gt;
+
+&lt;h2 id=&quot;git-push-fetch-and-pull&quot;&gt;Git push, fetch, and pull&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Git push&lt;/code&gt; sends changes committed in a local repository to a remote repository.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Git fetch&lt;/code&gt; grabs updates from a remote repository to a local repository, but does not update the staging area or working directory. For example, if you &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git fetch&lt;/code&gt; a new branch, you will be able to see new branches, but your files will not be changed&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Git checkout&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Git pull&lt;/code&gt; is a combination of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git fetch&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git checkout&lt;/code&gt; . The command grabs new changes in a remote repository, pulls them in, merges them into your local staging area, and writes them to your working directory.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_44.png&quot; alt=&quot;/assets/posts/git/IMG_44.png&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;When a remote repository is cloned, Git creates a connection between local and remote repos. The default name for the remote repository is &lt;strong&gt;origin.&lt;/strong&gt; The command &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git remote&lt;/code&gt; lists all servers for remote repositories.&lt;/p&gt;
+
+    &lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_45.png&quot; alt=&quot;/assets/posts/git/IMG_45.png&quot; /&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git branch&lt;/code&gt; will show all local branches for the remote repository, the option &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-a&lt;/code&gt; will show &lt;em&gt;all&lt;/em&gt; branches, including remote.&lt;/p&gt;
+
+    &lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_46.png&quot; alt=&quot;/assets/posts/git/IMG_46.png&quot; /&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;The tracking branch is your local branch connected to a specific remote branch. The default branch in a remote repository is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;master&lt;/code&gt;, but it can easily be changed in the GitHub settings.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git remote show origin&lt;/code&gt; provides more verbose output, which includes the fetch and push URLs, the HEAD branch, all remote branches, local branches configured for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git pull&lt;/code&gt; , and local refs configured for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git push&lt;/code&gt; as well as their statuses.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git remote prune&lt;/code&gt; removes stale branches from a local repository— that is, it deletes local branches that were removed remotely.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_47.png&quot; alt=&quot;/assets/posts/git/IMG_47.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;As previously mentioned, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git pull&lt;/code&gt; is a two step process. As illustrated above, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git fetch&lt;/code&gt; is first performed, which grabs all data from the remote Git repository and stores it locally. Git then performs &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git merge FETCH_HEAD&lt;/code&gt; to make the local repo current.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Overview of Git pull&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Checkout local branch and make sure it’s the tracking branch and has a corresponding remote. Use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git branch -vv&lt;/code&gt; to check.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git pull&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Git will fetch all changes from remote, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git fetch&lt;/code&gt; is executed in the background.&lt;/li&gt;
+  &lt;li&gt;After fetching Git updates &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;FETCH_HEAD&lt;/code&gt; file that contains SHA1 hashes of the last commits in remote for all tracking branches.&lt;/li&gt;
+  &lt;li&gt;Git merges remote into current branch &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git merge FETCH_HEAD&lt;/code&gt;, note this step is entirely local!&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_48.png&quot; alt=&quot;/assets/posts/git/IMG_48.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;So what exactly is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;FETCH_HEAD&lt;/code&gt;? In the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.git&lt;/code&gt; folder, there exist &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;HEAD&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ORIG_HEAD&lt;/code&gt;, and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;FETCH_HEAD&lt;/code&gt; files. Inspecting the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;FETCH_HEAD&lt;/code&gt; file, we find a list of branches and their status.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_49.png&quot; alt=&quot;/assets/posts/git/IMG_49.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;When &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git fetch&lt;/code&gt; is executed as part of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git pull&lt;/code&gt;, git will update &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.git/FETCH_HEAD&lt;/code&gt; , which lists all available branches. The first branch in this list will be the checked out branch. Then, when &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git merge FETCH_HEAD&lt;/code&gt; is executed, the first branch listed in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;FETCH_HEAD&lt;/code&gt; file without the &lt;em&gt;not-for-merge&lt;/em&gt; tag will be merged into local tracking for the current branch.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Pushing to a remote repository&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;To create a new branch locally, use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git checkout -b [branch]&lt;/code&gt;. To inspect, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git branch -vv&lt;/code&gt; lists local branches, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git branch -r&lt;/code&gt; lists remote branches. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git branch -a&lt;/code&gt; lists all local and remote branches with their status.&lt;/p&gt;
+
+&lt;p&gt;In order to push our new local branch and create a corresponding remote branch, we need to use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git push --set-upstream origin [branch]&lt;/code&gt;. You can replace &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--set-upstream&lt;/code&gt; with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-u&lt;/code&gt; to save some time!&lt;/p&gt;
+
+&lt;p&gt;Now that the branches are linked, you can simply &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git push&lt;/code&gt; to update the local and remote branches simultaneously.&lt;/p&gt;
+
+&lt;p&gt;Should a remote branch be deleted, you can update tracking statuses for local branches using the command &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git remote update origin --prune&lt;/code&gt; &amp;amp; confirm local changes using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git branch --vv&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;To remove a remote branch using the local terminal using the command &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git push origin -d [branch]&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git show-ref&lt;/code&gt; shows all references, both local &amp;amp; remote. Pass a branch to the command to see a reference for that particular branch.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_50.png&quot; alt=&quot;/assets/posts/git/IMG_50.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Here, we can see the hashes are identical for remote and local copies of master— this is a quick and easy way to check if a branch is up-to-date with it’s remote counterpart from the terminal.&lt;/p&gt;
+
+&lt;h2 id=&quot;git-tags&quot;&gt;Git tags&lt;/h2&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_51.png&quot; alt=&quot;/assets/posts/git/IMG_51.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;A &lt;strong&gt;Tag&lt;/strong&gt; is a static text pointer to a specific commit. Tags were introduced to fill the void left by branches, which are dynamic pointers to different commits. At anytime, we can checkout a specific tag and move directly to that commit.&lt;/p&gt;
+
+&lt;p&gt;Git tags are mostly used to add release versions to a project. For example, we could add a specific tag anytime a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;feature&lt;/code&gt; branch is merged into master.&lt;/p&gt;
+
+&lt;h3 id=&quot;staging-vs-production&quot;&gt;&lt;strong&gt;Staging vs. Production&lt;/strong&gt;&lt;/h3&gt;
+
+&lt;p&gt;In modern software development, most projects adhere to CI/CD principals (Continuous Integration / Continuous Development). With CI/CD, you’re using two separate development environments: &lt;strong&gt;Staging&lt;/strong&gt; and &lt;strong&gt;Production&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Staging&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Corresponding branch: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;release&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Primarily for testing, internal use&lt;/li&gt;
+  &lt;li&gt;Frequent merges&lt;/li&gt;
+  &lt;li&gt;Different feature branches are merged into a release branch&lt;/li&gt;
+  &lt;li&gt;Many have merge rights&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;Production&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Corresponding branch: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;master&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;For stable production service, externally facing&lt;/li&gt;
+  &lt;li&gt;Merging happens on a release cycle— typically monthly or bi-monthly.&lt;/li&gt;
+  &lt;li&gt;Only release branch is merged into &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;master&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;Few have merge rights.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;semantic-versioning&quot;&gt;Semantic Versioning&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;Semantic Versioning&lt;/strong&gt; is a common convention for version naming. In semantic version, each number corresponds to a particular component of the version. The convention is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MAJOR.MINOR.PATCH&lt;/code&gt;, see &lt;a href=&quot;http://semver.org&quot;&gt;semver.org&lt;/a&gt; for specifics on this.&lt;/p&gt;
+
+&lt;p&gt;There are two different types of tags in Git: &lt;strong&gt;lightweight&lt;/strong&gt; and &lt;strong&gt;annotated.&lt;/strong&gt; While both are stored in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.git/refs/tags&lt;/code&gt;, annotated tags are also stored in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.git/objects&lt;/code&gt; and include a tag message, author, and date.&lt;/p&gt;
+
+&lt;p&gt;Lightweight— &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git tag v1.0.0&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Annotated— &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git tag -a v1.0.0 -m &quot;Hello, world&quot;&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Note:&lt;/strong&gt; tag names must be unique across an entire repository.&lt;/p&gt;
+
+&lt;h2 id=&quot;rebasing&quot;&gt;Rebasing&lt;/h2&gt;
+
+&lt;p&gt;Rebasing is a different way to merge two branches together. There are some advantages and disadvantages to this method.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Rebasing rewrites history— it doesn’t keep the entire history of all commits (some commits are lost).&lt;/li&gt;
+  &lt;li&gt;History becomes linear— with merging, there are commits with multiple parents, but with rebasing every commit has a single parent (if you rebase &amp;amp; merge branches).&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_52.png&quot; alt=&quot;/assets/posts/git/IMG_52.png&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;rebasing-steps&quot;&gt;Rebasing Steps&lt;/h3&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Checkout &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;feature&lt;/code&gt; branch— &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git checkout feature-1&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Rebase &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;feature&lt;/code&gt; branch on top of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;base&lt;/code&gt; branch— &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git rebase master&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Checkout &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;base&lt;/code&gt; branch— &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git checkout master&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Merge &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;feature&lt;/code&gt; branch into the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;base&lt;/code&gt; branch using fast forward merge— &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git merge feature-1&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;In steps 1 &amp;amp; 2, we’re rebasing the feature branch onto the base branch. In steps 3 &amp;amp; 4, we’re merging feature into base.&lt;/p&gt;
+
+&lt;p&gt;When a rebase is performed, git creates copies of old commits and moves them to master. Old commits are garbage collected.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/posts/git/IMG_53.png&quot; alt=&quot;/assets/posts/git/IMG_53.png&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;ignoring-files-in-git&quot;&gt;Ignoring files in Git&lt;/h2&gt;
+
+&lt;p&gt;A &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.gitignore&lt;/code&gt; file explicitly tells Git which files/folders to ignore. While files within &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.gitignore&lt;/code&gt; will not be added to the repository, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.gitignore&lt;/code&gt; must be in the repository itself (usually in the root of the repo).&lt;/p&gt;
+
+&lt;h3 id=&quot;basic-gitignore-rules&quot;&gt;Basic gitignore rules&lt;/h3&gt;
+
+&lt;p&gt;There are three statuses in Git: untraced, tracked, and ignored. Within the tracked status, there are the three sub-statuses which we’re familiar with now: unmodified, modified, and staged. The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.gitignore&lt;/code&gt; folder defines the rules for which files end up in the ignored status.&lt;/p&gt;
+
+&lt;p&gt;Within a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.gitignore&lt;/code&gt; file, you can specify to ignore a single file within a repository (just list the name) or an entire folder. ([FOLDER]/) Wildcards also apply. An example gitignore file might look like:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#Ignore single file
+new-file.txt
+
+#Ignore directory
+bin/
+
+#Ignore temp files
+*.tmp
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In order to commit a previously ignored file, simply remove the filename from gitignore. To ignore a previously committed file, just add the filename back into gitignore and commit. If you’d like the file to remain in the working directory, run the command &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git rm --cached [FILE]&lt;/code&gt; — this will keep the file in the local directory, while removing it from the repo.&lt;/p&gt;
+
+&lt;h3 id=&quot;common-practices--templates&quot;&gt;Common practices &amp;amp; templates&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;Best Practices&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;build folders like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/bin&lt;/code&gt; — these can be created from the repository itself&lt;/li&gt;
+  &lt;li&gt;dependency folders like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;node_modules&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;compiled and log files like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;*.pyc, *log&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;hidden OS files like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Thumbs.db&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.DS_Store&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://gitignore.io&quot;&gt;gitignore.io&lt;/a&gt; has some example templates for various languages. &lt;a href=&quot;http://github.com/github/gitignore&quot;&gt;github.com/github/gitignore&lt;/a&gt; is a collection of gitignore files for specific applications.&lt;/p&gt;
+
+&lt;h2 id=&quot;detached-head&quot;&gt;Detached HEAD&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;Detached HEAD&lt;/strong&gt; occurs when you checkout a particular commit using its SHA1 hash. The HEAD no longer points to a branch, but rather &lt;em&gt;only&lt;/em&gt; a commit. In a detached HEAD state, you can create commits outside of any particular branch! HEAD will point to these new commits, but they too will be outside any branch.&lt;/p&gt;
+
+&lt;p&gt;Returning to another branch with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git checkout master&lt;/code&gt; , for example, will bring you back to that state. Since commits in the detached state were outside of a branch, they will be garbage collected by Git (this occurs in 30 days). In order to keep changes, you can checkout a branch with changes made in the detached state.&lt;/p&gt;
+
+&lt;p&gt;This means that a detached HEAD state is a good opportunity for experimental commits— if something breaks you can simply checkout another branch without having to create a separate branch or delete it when you’re done.&lt;/p&gt;</content><author><name>Matt Palmer</name><email>m@ppal.me</email></author><category term="studies" /><summary type="html">Note: This is a pretty rough/unpolished guide I wrote while following a Udemy course. I found the first half of the course to be very helpful and interesting, while the latter half was a bit longwinded and unnecessary. For anyone that wants a fundamental understanding of Git, I think it’s of great value.</summary></entry></feed>
