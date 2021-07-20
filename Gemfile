@@ -16,5 +16,5 @@ gem "rails", "~> 6.1"
 
 gem "yaml", "~> 0.1.1"
 
-gem "nokogiri", "~> 1.11"
+gem "nokogiri", "~> 1.10.1"
 

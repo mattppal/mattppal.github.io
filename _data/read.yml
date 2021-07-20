@@ -1,4 +1,22 @@
 ---
+- title: 'Delivering Happiness: A Path to Profits, Passion, and Purpose'
+  link: https://www.goodreads.com/book/show/6828896-delivering-happiness?utm_medium=api&utm_source=rss
+  img_src: https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1344267716l/6828896._SY75_.jpg
+  date_read: 2021-07-10
+  author: Tony Hsieh
+  guid: '3498633689'
+- title: 'Leading by Design: The Ikea Story'
+  link: https://www.goodreads.com/book/show/170099.Leading_by_Design?utm_medium=api&utm_source=rss
+  img_src: https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1172373700l/170099._SX50_.jpg
+  date_read: 2021-07-10
+  author: Bertil Torekull
+  guid: '4067455580'
+- title: 'Never Split the Difference: Negotiating As If Your Life Depended On It'
+  link: https://www.goodreads.com/book/show/26156469-never-split-the-difference?utm_medium=api&utm_source=rss
+  img_src: https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1460910517l/26156469._SY75_.jpg
+  date_read: 2021-07-08
+  author: Chris Voss
+  guid: '4094933081'
 - title: 'Onward: How Starbucks Fought for Its Life without Losing Its Soul'
   link: https://www.goodreads.com/book/show/9151181-onward?utm_medium=api&utm_source=rss
   img_src: https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1390950547l/9151181._SX50_.jpg
@@ -42,21 +60,3 @@
   date_read: 2021-04-10
   author: Walter Isaacson
   guid: '2601641676'
-- title: Mere Christianity
-  link: https://www.goodreads.com/book/show/596510.Mere_Christianity?utm_medium=api&utm_source=rss
-  img_src: https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1347800858l/596510._SY75_.jpg
-  date_read: 2021-03-31
-  author: C.S. Lewis
-  guid: '3886926798'
-- title: Greenlights
-  link: https://www.goodreads.com/book/show/52838315-greenlights?utm_medium=api&utm_source=rss
-  img_src: https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1604281659l/52838315._SX50_.jpg
-  date_read: 2021-03-06
-  author: Matthew McConaughey
-  guid: '3872241992'
-- title: 'Sam Walton: Made In America'
-  link: https://www.goodreads.com/book/show/10631.Sam_Walton?utm_medium=api&utm_source=rss
-  img_src: https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1463939506l/10631._SY75_.jpg
-  date_read: 2021-02-28
-  author: Sam Walton
-  guid: '3864475700'
