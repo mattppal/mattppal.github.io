@@ -16,16 +16,10 @@ module Readings
             reading_path = site.in_source_dir('_data/reading.yml')
             read_path = site.in_source_dir('_data/read.yml')
             
-            File.delete(reading_path) if File.exist?(reading_path)
-            File.delete(read_path) if File.exist?(read_path)
-
-            File.new(reading_path, "w")
-            File.new(read_path, "w")
-
             reading_books = []
             URI.open(reading_url) do |rss|
                 feed = RSS::Parser.parse(rss)
-                # Add fake virtual documents to the collection
+                # Add fake virtual documents to the collectionex
                 feed.items.each do |item|
                     puts "Reading: #{item.title}"
                     
@@ -52,7 +46,10 @@ module Readings
                    
                 end
             end
-            File.write(reading_path, reading_books.to_yaml)
+            
+            File.open(reading_path, "w") do |f| 
+                f.write(reading_books.to_yaml) 
+            end
 
             current_books = []
             reading_books.each do |r|
@@ -94,8 +91,11 @@ module Readings
                 
                 end
             end
-            read_books =  read_books.slice(0,10)
-            File.write(read_path, read_books.to_yaml)
+            # read_books =  read_books.slice(0,10)
+            
+            File.open(read_path, "w") do |f| 
+                f.write(read_books.to_yaml) 
+            end
         end
     end
 end
