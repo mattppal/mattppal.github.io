@@ -23,7 +23,7 @@ In my free time, I really enjoy reading about passionate teams, successful compa
 ## Read
 
 <div>
-{% for book in site.read %}
+{% for book in site.data['read'] %}
     <a href= "{{ book.link }}">
       <div>
         <h5>{{ book.title }}</h5>
