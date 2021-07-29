@@ -4,6 +4,7 @@ title: "Using Jekyll Hooks to dynamically generate site content from external so
 categories: projects
 published: true
 ---
+
 <figure>
   <center><img src="{{site.url}}/assets/posts/goodreads/header.png" alt="Currently Reading Header"/></center>
 </figure>
@@ -172,6 +173,6 @@ Boom! Now we're storing our lists in `site.data['reading']` and `site.data['read
 </div>
 ```
 
-And voila! The [books]({{site.url}}/books) page arrives at it's present form. 🙂
+And voila! The [books]({{site.url}}/books) page arrives at it's present form. Marking a book _read_ or _reading_ on Goodreads will flow through to the site nightly and 100% automatically!
 
 I'd love to hear if you found this helpful or implemented your own solution. Don't hesitate to reach out via one of the links on-site!
