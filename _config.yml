@@ -63,6 +63,7 @@ minima:
 
 # Build settings
 theme: minima
+google_analytics: G-EC2ZQ7Y8TD
 
 plugins:
   - jekyll-feed
