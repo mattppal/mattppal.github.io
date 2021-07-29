@@ -11,7 +11,7 @@ author:
 description: > # this means to ignore newlines until "show_excerpts:"
   Product analyst at AllTrails & Swarthmore College grad. You can find me at the gym, 
   on a bike, or on a trail when not at work.
-
+google_analytics: G-EC2ZQ7Y8TD
 baseurl: "/"
 
 show_excerpts: false # set to true to show excerpts on the homepage
@@ -63,7 +63,6 @@ minima:
 
 # Build settings
 theme: minima
-google_analytics: G-EC2ZQ7Y8TD
 
 plugins:
   - jekyll-feed
