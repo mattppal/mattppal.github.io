@@ -4,11 +4,8 @@ title: "Using Jekyll Hooks to dynamically generate site content from external so
 categories: projects
 published: true
 ---
-* TOC
-{:toc}
-
 <figure>
-  <img src="{{site.url}}/assets/posts/goodreads/header.png" alt="Currently Reading Header"/>
+  <center><img src="{{site.url}}/assets/posts/goodreads/header.png" alt="Currently Reading Header"/></center>
 </figure>
 
 ### Preface
