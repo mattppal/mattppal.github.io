@@ -24,13 +24,13 @@ minima:
 
   # generate social links in footer
   social_links:
-    twitter: mattpalmerr
+    # twitter: mattpalmerr
     github: mattppal
     # devto: jekyll
     # dribbble: jekyll
     # facebook: jekyll
     # flickr:   jekyll
-    instagram: mattpalmerr
+    # instagram: mattpalmerr
     linkedin: matt-palmer
     # pinterest: jekyll
     # youtube: jekyll

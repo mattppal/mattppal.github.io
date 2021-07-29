@@ -4,7 +4,7 @@ require 'yaml'
 require 'nokogiri'
 
 Jekyll::Hooks.register :site, :pre_render do |site, payload|
-    reading_url = 'https://www.goodreads.com/review/list_rss/89626431?key=Ejk2W2RVCXJvlfGrIcEpK6Yk4o_3eHZsxByi9i7GODkPQy4v&shelf=currently-reading';
+    reading_url = 'https://www.goodreads.com/review/list_rss/89626431?key=Ejk2W2RVCXJvlfGrIcEpK6Yk4o_3eHZsxByi9i7GODkPQy4v&shelf=currently-reading'
     read_url = 'https://www.goodreads.com/review/list_rss/89626431?key=Ejk2W2RVCXJvlfGrIcEpK6Yk4o_3eHZsxByi9i7GODkPQy4v&shelf=read'
     
     def get_rss_items(input_url)
