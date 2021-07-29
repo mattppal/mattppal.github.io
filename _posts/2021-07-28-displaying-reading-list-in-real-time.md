@@ -6,6 +6,11 @@ published: true
 ---
 * TOC
 {:toc}
+
+<figure>
+  <img src="{{site.url}}/assets/posts/goodreads/header.png" alt="Currently Reading Header"/>
+</figure>
+
 ### Preface
 
 You may have noticed my fancy [books]({{site.url}}/books) page, which contains an up-to-date list of what I'm reading and what I've finished. That page is powered by Goodreads and updates on a daily basis. Initially, I was updating the page manually with a local build of my site and a push to GitHub, but I wanted to automate it— I already log my books on Goodreads, why shouldn't that be the end of it?
