@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Dynamically generated Airflow TaskGroups for data teams"
+title: "Dynamically generated Airflow TaskGroups for data teams."
 categories: projects
 published: true
 ---
