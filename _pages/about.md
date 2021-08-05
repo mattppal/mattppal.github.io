@@ -13,7 +13,7 @@ I'm a member of the {{site.author.team}} Team at {{site.author.company}}. I grad
 
 I enjoy using analytics to improve understanding of product and tackling data engineering problems, specifically those around improving data access and efficiency. I'm also very passionate about product— I love making lives better by delivering value!
 
-This website was built using [Jekyll](https://jekyllrb.com/) and deployed through [GitHub Pages](https://pages.github.com/).
+This website was built using [Jekyll](https://jekyllrb.com/) and deployed through [GitHub Pages](https://pages.github.com/). Custom Ruby is used in a few spots to dynamically generate content. See [this post]({% post_url 2021-07-28-displaying-reading-list-in-real-time %})
 
 **Interests**
 
