@@ -1,6 +1,8 @@
+on: push
 jobs:
   changedfiles:
     runs-on: ubuntu-latest
+    
     # Map a step output to a job output
     outputs:
       all: ${{ steps.changes.outputs.all}}
