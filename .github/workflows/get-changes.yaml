@@ -5,14 +5,14 @@ jobs:
   filediff:
     runs-on: ubuntu-latest
     # Map a step output to a job output
-#     outputs:
-#       all: ${{ steps.changes.outputs.all}}
-#       ts: ${{ steps.changes.outputs.ts }}
+    #     outputs:
+    #       all: ${{ steps.changes.outputs.all}}
+    #       ts: ${{ steps.changes.outputs.ts }}
     steps:
       - name: get changed files
         id: getfile
         run: |
-          echo "::set-output name=files::$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | xargs)"
+          echo "::set-output name=files::$(git diff --no-commit-id --name-only -r ${{ github.sha }} | xargs)"
 
       - name: echo output
         run: |
