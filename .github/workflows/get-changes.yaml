@@ -1,28 +1,85 @@
-on: push
+name: Build
+on: [push, pull_request]
+
 jobs:
-  changedfiles:
-    runs-on: ubuntu-latest
 
-    # Map a step output to a job output
+  generate-matrix:
+    name: Generate matrix for build
+    runs-on: ubuntu-latest
     outputs:
-      all: ${{ steps.changes.outputs.all}}
-      # ts: ${{ steps.changes.outputs.ts }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      # Make sure we have some code to diff.
-      - name: Checkout repository
-        uses: actions/checkout@v2
-      - name: Get changed files
-        id: changes
-        # Set outputs using the command.
+      - uses: actions/checkout@v2
+      - name: Check changed files
+        id: diff
         run: |
-          echo "::set-output name=all::$(diff --no-commit-id --name-only -r ${{ github.sha }})"
+          # See https://github.community/t/check-pushed-file-changes-with-git-diff-tree-in-github-actions/17220/10
+          if [ $GITHUB_BASE_REF ]; then
+            # Pull Request
+            git fetch origin $GITHUB_BASE_REF --depth=1
+            export DIFF=$( git diff --name-only origin/$GITHUB_BASE_REF $GITHUB_SHA )
+            echo "Diff between origin/$GITHUB_BASE_REF and $GITHUB_SHA"
+          else
+            # Push
+            git fetch origin ${{ github.event.before }} --depth=1
+            export DIFF=$( git diff --name-only ${{ github.event.before }} $GITHUB_SHA )
+            echo "Diff between ${{ github.event.before }} and $GITHUB_SHA"
+          fi
+          echo "$DIFF"
+          # Escape newlines (replace \n with %0A)
+          echo "::set-output name=diff::$( echo "$DIFF" | sed ':a;N;$!ba;s/\n/%0A/g' )"
+      - name: Set matrix for build
+        id: set-matrix
+        run: |
+          # See https://stackoverflow.com/a/62953566/11948346
+          DIFF="${{ steps.diff.outputs.diff }}"
+          JSON="{\"include\":["
 
-  lint:
-    runs-on: ubuntu-latest
-    # require the first job to have ran
-    needs: changedfiles
-    # only run there are changed files
-    if: ${{needs.changedfiles.outputs.all}}
+          # Loop by lines
+          while read path; do
+            # Set $directory to substring before /
+            directory="$( echo $path | cut -d'/' -f1 -s )"
+
+            if [ -z "$directory" ]; then
+              continue # Exclude root directory
+            elif [ "$directory" == docs ]; then
+              continue # Exclude docs directory
+            elif [ "$path" == *.rst ]; then
+              continue # Exclude *.rst files
+            fi
+
+            # Set $os. "ubuntu-latest" by default. if directory starts with windows, then "windows-latest"
+            os="ubuntu-latest"
+            if [ "$directory" == windows* ]; then
+              os="windows-latest"
+            fi
+
+            # Add build to the matrix only if it is not already included
+            JSONline="{\"directory\": \"$directory\", \"os\": \"$os\"},"
+            if [[ "$JSON" != *"$JSONline"* ]]; then
+              JSON="$JSON$JSONline"
+            fi
+          done <<< "$DIFF"
+
+          # Remove last "," and add closing brackets
+          if [[ $JSON == *, ]]; then
+            JSON="${JSON%?}"
+          fi
+          JSON="$JSON]}"
+          echo $JSON
+
+          # Set output
+          echo "::set-output name=matrix::$( echo "$JSON" )"
+
+  build:
+    name: Build "${{ matrix.directory }}" on ${{ matrix.os }}
+    needs: generate-matrix
+    strategy:
+      matrix: ${{fromJson(needs.generate-matrix.outputs.matrix)}}
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: echo changed files
-        run: echo ${{needs.changedfiles.outputs.all}}
+      - uses: actions/checkout@v2
+      - name: Build
+        run: |
+          cd ${{ matrix.directory }}
+          echo "${{ matrix.directory }} ${{ matrix.os }}"
