@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "How Git works"
+title: "How Git works."
 categories: studies
 published: true
 ---
