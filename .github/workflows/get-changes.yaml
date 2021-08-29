@@ -15,14 +15,14 @@ jobs:
         id: changes
         # Set outputs using the command.
         run: |
-          echo "::set-output name=all::git diff --name-only --diff-filter=ACMRT ${{ github.sha }}"
+          echo "::set-output name=all::$(diff-tree --no-commit-id --name-only -r ${{ github.sha }})"
 
   lint:
     runs-on: ubuntu-latest
     # require the first job to have ran
     needs: changedfiles
     # only run there are changed files
-    # if: ${{needs.changedfiles.outputs.all}}
+    if: ${{needs.changedfiles.outputs.all}}
     steps:
       - name: echo changed files
         run: echo ${{needs.changedfiles.outputs.all}}
