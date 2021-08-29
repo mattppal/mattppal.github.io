@@ -15,7 +15,7 @@ jobs:
         id: changes
         # Set outputs using the command.
         run: |
-          echo "::set-output name=all::$(git diff --name-only --diff-filter=ACMRT ${{ github.sha }})"
+          echo "::set-output name=all::git diff --name-only --diff-filter=ACMRT ${{ github.sha }}"
 
   lint:
     runs-on: ubuntu-latest
