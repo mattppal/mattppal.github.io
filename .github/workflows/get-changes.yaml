@@ -15,7 +15,7 @@ jobs:
         id: changes
         # Set outputs using the command.
         run: |
-          echo "::set-output name=all::$(diff-tree --no-commit-id --name-only -r ${{ github.sha }})"
+          echo "::set-output name=all::$(diff --no-commit-id --name-only -r ${{ github.sha }})"
 
   lint:
     runs-on: ubuntu-latest
