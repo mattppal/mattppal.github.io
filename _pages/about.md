@@ -11,7 +11,7 @@ permalink: /about/
 
 I'm a member of the {{site.author.team}} Team at {{site.author.company}}. I graduated from Swarthmore College in 2018, where I majored in physics & economics— I also played baseball. I currently reside in {{site.author.location}}.
 
-I enjoy using analytics to improve understanding of product and tackling data engineering problems, specifically those around improving data access and efficiency. I'm also very passionate about product— I love making lives better by delivering value!
+I enjoy using analytics to understand product and make data-driven decisions. I also find the engineering side fun— I love making things more efficient/building new tools.
 
 This website was built using [Jekyll](https://jekyllrb.com/) and deployed through [GitHub Pages](https://pages.github.com/).
 
