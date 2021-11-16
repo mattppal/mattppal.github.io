@@ -29,7 +29,7 @@ Jekyll::Hooks.register :site, :pre_render do |site, payload|
                             # 'description' => item.description,
                             'guid' => guid
                 }
-                puts item.title
+                # puts item.title
                 item_list.append(payload)
             end
         end

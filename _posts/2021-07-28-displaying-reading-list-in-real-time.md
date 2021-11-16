@@ -15,7 +15,7 @@ You may have noticed my fancy [books]({{site.url}}/books) page, which contains a
 
 Goodreads profiles can be public (and [my profile is](https://www.goodreads.com/user/show/89626431-matt-palmer)). With a bit of digging, you can find RSS feeds for Bookshelves, i.e. _Reading_, _Read_, _To-Read_. Once I had the links, I just needed to loop through the feed items + generate some Jekyll data and I'd be set, right?
 
-### Reality Check
+### Reality check
 
 In reality, the task is a little more complex. Here were the most prominent challenges:
 
