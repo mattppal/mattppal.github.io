@@ -71,7 +71,7 @@ I would pivot using:
 
 To obtain `total_df`, we can just apply a groupby to the cohorts:
 
-`cohort_df[['cohort','cohort_total']].groupby('cohort_df').max('cohort_total')`.
+`cohort_df[['cohort','cohort_total']].groupby('cohort').max()`.
 
 Our output will then be similar to the image show earlier, albeit with a more pleasing color scheme. 🙂
 
