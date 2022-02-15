@@ -2,7 +2,7 @@
 layout: post
 title: "On Trajectories..."
 categories: blog
-published: false
+published: true
 
 ---
 
