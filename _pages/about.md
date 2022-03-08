@@ -18,6 +18,7 @@ This website was built using [Jekyll](https://jekyllrb.com/) and deployed throug
 **Interests**
 
 🏋️‍♀️&emsp;olympic lifting \
+🥙&emsp;nutrition \
 🧗&emsp;climbing \
 🏂&emsp;snowboarding \
 👾&emsp;scripting \
