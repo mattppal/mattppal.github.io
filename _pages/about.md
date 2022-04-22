@@ -6,7 +6,7 @@ permalink: /about/
 
 {%- assign social = site.minima.social_links -%}
 
-<figure class="about-picture"><img src="/assets/media/IMG_3403.jpg" alt="" title="Matt Palmer">
+<figure class="about-picture"><img src="/assets/media/golden_wall.png" alt="" title="Matt Palmer">
 <figcaption><center>That’s me.</center></figcaption></figure>
 
 I'm a member of the {{site.author.team}} Team at {{site.author.company}}. I graduated from Swarthmore College in 2018, where I majored in physics & economics— I also played baseball. I currently reside in {{site.author.location}}.
