@@ -4,15 +4,13 @@ title: writing
 permalink: /writing/
 ---
 
-Outside of work, I enjoy exploring technical projects. Often, I find the best motivator is to work with other passionate individuals on ideas that have real-world applications.
+Outside of work, I enjoy exploring technical projects. Often, I find the best motivator is to work with other passionate individuals on ideas that have real-world applications. Here's a sample of my freelance/fun writing.
 
-Here's a sample of my freelance/fun writing:
-
-## Present
+### Present
 
 I'm currently collaborating with [Hex](https://hex.tech/) to share a look at the AllTrails analytics process and give insight into the usefulness of their product.
 
-## Past
+### Past
 
 I've worked with the team at [Zuar](https://www.zuar.com/) to publish a number of SEO-focused articles:
 
