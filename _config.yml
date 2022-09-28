@@ -4,13 +4,13 @@ author:
   email: mattpalmerr@me.com
   location: Salt Lake City, Utah ⛰
   location_link: https://www.visitsaltlake.com/
-  company: AllTrails 🥾
-  company_link: https://www.alltrails.com/
-  team: Analytics
-  job: product analyst
+  company: Underline Infrastructure 🏢
+  company_link: https://www.underline.com/
+  team: Data
+  job: data engineer
 description: > # this means to ignore newlines until "show_excerpts:"
-  Product analyst at AllTrails & Swarthmore College grad. You can find me at the gym, 
-  on a bike, or on a trail when not at work.
+  Data Enginner at Underline & Swarthmore College grad. You can find me at the gym, 
+  climbing rocks, or on a trail when not at work.
 google_analytics: G-EC2ZQ7Y8TD
 baseurl: "/"
 
