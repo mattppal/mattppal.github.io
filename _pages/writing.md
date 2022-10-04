@@ -14,6 +14,7 @@ I'm currently collaborating with [Hex](https://hex.tech/) to share a look at the
 
 I've worked with the team at [Zuar](https://www.zuar.com/) to publish a number of SEO-focused articles:
 
+- [Data Integration Patterns Explained](https://www.zuar.com/blog/data-integration-patterns-explained/)
 - [Reverse ETL vs. ETL vs. ELT](https://www.zuar.com/blog/reverse-etl-vs-etl-vs-elt/)
 - [What is Google Cloud Composer?](https://www.zuar.com/blog/what-is-google-cloud-composer/)
 - [Amazon Redshift `DATEDIFF` Function Cheat Sheet](https://www.zuar.com/blog/amazon-redshift-datediff-function/)
