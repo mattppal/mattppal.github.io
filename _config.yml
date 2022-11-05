@@ -2,8 +2,8 @@ title: Matt Palmer
 author:
   name: Matt Palmer
   email: mattpalmerr@me.com
-  location: Salt Lake City, Utah ⛰
-  location_link: https://www.visitsaltlake.com/
+  location: Asheville, North Carolina ⛰
+  location_link: https://www.exploreasheville.com/
   company: Underline Infrastructure 🏢
   company_link: https://www.underline.com/
   team: Data
@@ -24,7 +24,7 @@ minima:
 
   # generate social links in footer
   social_links:
-    # twitter: mattpalmerr
+    twitter: mattppal
     github: mattppal
     # devto: jekyll
     # dribbble: jekyll
@@ -39,7 +39,7 @@ minima:
     # telegram: jekyll
     # googleplus: +jekyll
     # microdotblog: jekyll
-    # keybase: jekyll
+    keybase: mattppal
 
     # Mastodon instances
     # mastodon:
