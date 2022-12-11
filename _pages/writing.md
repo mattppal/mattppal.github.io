@@ -14,6 +14,8 @@ Outside of work, I enjoy exploring technical projects. Often, I find the best mo
 
 I've worked with the team at [Zuar](https://www.zuar.com/) to publish a number of SEO-focused articles:
 
+- [The Complete Guide to Data Staging](https://www.zuar.com/blog/complete-guide-to-data-staging/)
+- [Data Transformation: Types, Process, Benefits & Definition](https://www.zuar.com/blog/data-transformation-types-process-benefits-and-definition/)
 - [Data Integration Patterns Explained](https://www.zuar.com/blog/data-integration-patterns-explained/)
 - [Reverse ETL vs. ETL vs. ELT](https://www.zuar.com/blog/reverse-etl-vs-etl-vs-elt/)
 - [What is Google Cloud Composer?](https://www.zuar.com/blog/what-is-google-cloud-composer/)
