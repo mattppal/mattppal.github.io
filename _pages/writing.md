@@ -12,7 +12,7 @@ Outside of work, I enjoy exploring technical projects. Often, I find the best mo
 
 ### SEO
 
-I've worked with the team at [Zuar](https://www.zuar.com/) to publish a number of SEO-focused articles:
+I've worked with the team at [Zuar](https://www.zuar.com/) to publish a number of technical blog posts:
 
 - [What are dbt Sources?](https://www.zuar.com/blog/what-are-dbt-sources/)
 - [The Complete Guide to Data Staging](https://www.zuar.com/blog/complete-guide-to-data-staging/)
