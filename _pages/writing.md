@@ -6,11 +6,15 @@ permalink: /writing/
 
 Outside of work, I enjoy exploring technical projects. Often, I find the best motivator is to work with other passionate individuals on ideas that have real-world applications. Here's a sample of my freelance/fun writing.
 
+### Forthcoming
+
+- Contributing to *Automating Data Transformation,* a report to be released by [O'Reilly](https://www.oreilly.com/) in Q2, 2023.
+
 ### Featured
 
 - [Hex at AllTrails](https://hex.tech/blog/hex-at-alltrails/)
 
-### SEO
+### Zuar
 
 I've worked with the team at [Zuar](https://www.zuar.com/) to publish a number of technical blog posts:
 
