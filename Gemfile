@@ -19,3 +19,5 @@ gem "yaml", "= 0.2.1"
 gem "nokogiri", "= 1.14.2"
 
 gem 'jekyll_picture_tag', '= 2.0.4'
+
+ruby '= 3.2.0'
