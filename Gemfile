@@ -16,6 +16,6 @@ gem "rails", "~> 6.1"
 
 gem "yaml", "~> 0.1.1"
 
-gem "nokogiri", "~> 1.10.1"
+gem "nokogiri", "~> 1.10.10rc3"
 
 gem 'jekyll_picture_tag', '~> 2.0'
