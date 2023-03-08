@@ -18,6 +18,10 @@ Outside of work, I enjoy exploring technical projects. Often, I find the best mo
 
 I've worked with the team at [Zuar](https://www.zuar.com/) to publish a number of technical blog posts:
 
+- [What is Modern Data Architecture](https://www.zuar.com/blog/modern-data-architecture/)
+- [Data Ingestion: Types, Pipelines, Tools, & More](https://www.zuar.com/blog/data-ingestion-pipeline-tools/)
+- [What is Google Bigtable?](https://www.zuar.com/blog/what-is-google-bigtable/)
+- [What is Data Extraction?](https://www.zuar.com/blog/what-is-data-extraction-definitions-tools-techniques/)
 - [What are dbt Sources?](https://www.zuar.com/blog/what-are-dbt-sources/)
 - [The Complete Guide to Data Staging](https://www.zuar.com/blog/complete-guide-to-data-staging/)
 - [Data Transformation: Types, Process, Benefits & Definition](https://www.zuar.com/blog/data-transformation-types-process-benefits-and-definition/)
