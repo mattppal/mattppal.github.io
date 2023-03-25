@@ -7,7 +7,7 @@ https://keybase.io/mattpal
 
 I hereby claim:
 
-  * I am an admin of https://ppal.me
+  * I am an admin of https://mattpalmer.io
   * I am mattpal (https://keybase.io/mattpal) on keybase.
   * I have a public key ASBfnIHosWHQoLHsRCA2EYCBU2IciVwWejo5UrXYkZlENAo
 
@@ -30,7 +30,7 @@ To do so, I am signing this object:
     },
     "service": {
       "entropy": "QS56Eqzh2uNruDXZFz7N/epG",
-      "hostname": "ppal.me",
+      "hostname": "mattpalmer.io",
       "protocol": "https:"
     },
     "type": "web_service_binding",
