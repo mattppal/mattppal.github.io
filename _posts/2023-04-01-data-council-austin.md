@@ -41,7 +41,7 @@ As with any conference, I think the greatest value comes from meeting passionate
 
 🤖 **Proliferation of AI tooling.** Who doesn't talk about AI these days? Yes, it's very impressive. Yes, it will change the world. I think adoption of things like [GitHub Copilot](https://github.com/features/copilot) should be done sooner rather than later. There's also a _very real_ opportunity for fast-movers to disrupt pretty much _every_ industry. My question: when will I be able to reliably integrate this into my workflows to improve their process?
 
-🙏 **Simplification of development process.** We’re on the cusp of something really great here, too. Development cycles for infrastructure/data-eng are really slow. [Modal](modal.com) and the like _will change that_. I think many common DevOps/infra headaches will be abstracted-away in the very short term. This is more of a challenge for enterprises who require more secure (VPC) solutions.
+🙏 **Simplification of development process.** We’re on the cusp of something really great here, too. Development cycles for infrastructure/data-eng are really slow. [Modal](https://www.modal.com) and the like _will change that_. I think many common DevOps/infra headaches will be abstracted-away in the very short term. This is more of a challenge for enterprises who require more secure (VPC) solutions.
 
 💨 **Adoption of _faster_ frameworks**
 
