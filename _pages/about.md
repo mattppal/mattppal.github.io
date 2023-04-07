@@ -17,13 +17,13 @@ This website was built using [Jekyll](https://jekyllrb.com/) and deployed throug
 
 **Interests**
 
-🏋️‍♀️&emsp;olympic lifting \
+🏋️‍♀️&emsp;strength training \
 🥙&emsp;nutrition \
 🧗&emsp;climbing \
-🏂&emsp;snowboarding \
 👾&emsp;scripting \
 📚&emsp;reading (biographies) \
 🥾&emsp;hiking \
+🌸&emsp;art \
 🤓&emsp;data (shocker)
 
 **Contact**
