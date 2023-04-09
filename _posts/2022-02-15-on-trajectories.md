@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "On Trajectories..."
+title: "🏹 On Trajectories..."
 categories: blog
 published: true
 
