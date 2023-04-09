@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Data Council Austin - Notes & Takeaways"
+title: "🤓 Data Council Austin - Notes & Takeaways"
 categories: data
 published: true
 

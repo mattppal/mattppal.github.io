@@ -9,21 +9,21 @@ permalink: /about/
 <figure class="about-picture"><img src="/assets/media/golden_wall.png" alt="" title="Matt Palmer">
 <figcaption><center>That’s me.</center></figcaption></figure>
 
-I'm a member of the {{site.author.team}} Team at {{site.author.company}}. I graduated from Swarthmore College in 2018, where I majored in physics & economics— I also played baseball. I currently reside in {{site.author.location}}.
+I'm a member of the {{site.author.team}} Team at {{site.author.company}}. I graduated from Swarthmore College in 2018, where I majored in physics & economics— I also played baseball. I currently reside in {{site.author.location}}, but I've lived across the country, from the Smokies to the Uintas.
 
-I enjoy using analytics to understand product and make data-driven decisions. I also find the engineering side fun— I love making things more efficient/building new tools.
+I enjoy using analytics to understand product and make data-driven decisions. I also find the engineering side fun— I love making things more efficient/building new tools. In my free time, I write and hack on fun projects, get outside, and do my best to become a better person.
 
-This website was built using [Jekyll](https://jekyllrb.com/) and deployed through [GitHub Pages](https://pages.github.com/). Custom Ruby is used in a few spots to dynamically generate content. See [this post]({% post_url 2021-07-28-displaying-reading-list-in-real-time %})
+This website was built using [Jekyll](https://jekyllrb.com/) and deployed through [GitHub Pages](https://pages.github.com/). Custom Ruby is used in a few spots to dynamically generate content. See [this post]({% post_url 2021-07-28-displaying-reading-list-in-real-time %}).
 
 **Interests**
 
-🏋️‍♀️&emsp;olympic lifting \
+🏋️‍♀️&emsp;strength training \
 🥙&emsp;nutrition \
 🧗&emsp;climbing \
-🏂&emsp;snowboarding \
 👾&emsp;scripting \
 📚&emsp;reading (biographies) \
 🥾&emsp;hiking \
+🌸&emsp;art \
 🤓&emsp;data (shocker)
 
 **Contact**

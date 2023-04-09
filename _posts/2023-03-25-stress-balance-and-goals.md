@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Stress, Balance, & Goals"
+title: "⚖️ Stress, Balance, & Goals"
 categories: musings
 published: true
 

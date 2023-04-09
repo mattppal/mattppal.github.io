@@ -4,7 +4,7 @@ title: books
 permalink: /books/
 ---
 
-In my free time, I really enjoy reading about passionate teams, successful companies, and interesting people. Here's what I've been into lately ordered by date of completion:
+In my free time, I enjoy reading about passionate teams, successful companies, and interesting people. Lately, I've also began exploring ideas about spirituality, consciousness, and self-compassion. Here's what I've been into lately ordered by date of completion:
 
 ## Reading
 
