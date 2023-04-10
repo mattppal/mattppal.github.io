@@ -30,4 +30,4 @@ This website was built using [Jekyll](https://jekyllrb.com/) and deployed throug
 
 📪&emsp;[{{site.author.email}}](mailto:{{site.author.email}})\
 👨‍💼&emsp;Reach out on [LinkedIn](https://www.linkedin.com/in/{{social.linkedin}})\
-📆&emsp;Schedule time to [chat](https://calendly.com/matt-pal/30min)
+📆&emsp;Schedule time to [chat](https://calendly.com/matt-pal/15-min)
