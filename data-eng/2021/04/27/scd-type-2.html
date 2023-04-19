@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Building a SCD Type-2 table with Databricks Delta Lake and Spark Streaming. | Matt Palmer</title>
+<meta name="generator" content="Jekyll v4.3.2" />
+<meta property="og:title" content="Building a SCD Type-2 table with Databricks Delta Lake and Spark Streaming." />
+<meta name="author" content="Matt Palmer" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Background Background" />
+<meta property="og:description" content="Background Background" />
+<meta property="og:site_name" content="Matt Palmer" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-04-27T00:00:00+00:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Building a SCD Type-2 table with Databricks Delta Lake and Spark Streaming." />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Matt Palmer"},"dateModified":"2021-04-27T00:00:00+00:00","datePublished":"2021-04-27T00:00:00+00:00","description":"Background Background","headline":"Building a SCD Type-2 table with Databricks Delta Lake and Spark Streaming.","mainEntityOfPage":{"@type":"WebPage","@id":"/data-eng/2021/04/27/scd-type-2.html"},"url":"/data-eng/2021/04/27/scd-type-2.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" title="Matt Palmer" /><script async src="https://www.googletagmanager.com/gtag/js?id=G-EC2ZQ7Y8TD"></script>
+<script>
+  window['ga-disable-G-EC2ZQ7Y8TD'] = window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes" || navigator.msDoNotTrack === "1";
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+
+  gtag('config', 'G-EC2ZQ7Y8TD');
+</script>
+
+<link rel="apple-touch-icon" sizes="120x120" href="/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+<link rel="manifest" href="/favicon/site.webmanifest">
+<link rel="mask-icon" href="/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="theme-color" content="#ffffff"></head>
+<body><header class="site-header">
+
+    <div class="wrapper"><a class="site-title" rel="author" href="/">Matt Palmer</a><nav class="site-nav">
+            <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+            <label for="nav-trigger">
+                <span class="menu-icon">
+                    <svg viewBox="0 0 18 15" width="18px" height="15px">
+                        <path
+                            d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z" />
+                    </svg>
+                </span>
+            </label>
+
+            <div class="trigger"><a class="page-link" href="/about/">about</a><a class="page-link" href="/art/">art</a><a class="page-link" href="/books/">books</a><a class="page-link" href="/cv">resume</a><a class="page-link" href="/writing/">writing</a></div>
+        </nav></div>
+</header><main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Building a SCD Type-2 table with Databricks Delta Lake and Spark Streaming.</h1>
+    <p class="post-meta"><time class="dt-published" datetime="2021-04-27T00:00:00+00:00" itemprop="datePublished">
+        Apr 27, 2021
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <ul id="markdown-toc">
+  <li><a href="#background" id="markdown-toc-background">Background</a></li>
+  <li><a href="#solution" id="markdown-toc-solution">Solution</a></li>
+  <li><a href="#implementation" id="markdown-toc-implementation">Implementation</a></li>
+  <li><a href="#creating-a-scd-type-2-table-for-users" id="markdown-toc-creating-a-scd-type-2-table-for-users">Creating a SCD Type-2 table for users</a>    <ul>
+      <li><a href="#foreachbatch" id="markdown-toc-foreachbatch">forEachBatch</a></li>
+      <li><a href="#databricks-upsert" id="markdown-toc-databricks-upsert">Databricks Upsert</a></li>
+    </ul>
+  </li>
+  <li><a href="#using-a-visitor-first-dates-table-to-meet-project-requirements" id="markdown-toc-using-a-visitor-first-dates-table-to-meet-project-requirements">Using a <em>Visitor First Dates</em> table to meet project requirements</a></li>
+  <li><a href="#partitioning" id="markdown-toc-partitioning">Partitioning</a></li>
+  <li><a href="#schematic" id="markdown-toc-schematic">Schematic</a></li>
+  <li><a href="#applications" id="markdown-toc-applications">Applications</a></li>
+  <li><a href="#checks-and-tests" id="markdown-toc-checks-and-tests">Checks and tests</a></li>
+</ul>
+<h3 id="background">Background</h3>
+
+<p>A common problem with visitor tracking is the inability to follow users across multiple devices. Even on the same device, should a visitor choose to clear their cookies, we will be unable to link them to their previous session. Unfortunately, that means processes that treat visitor cookies as unique visitors are imperfect.</p>
+
+<p>For example, A/B test bucketing will be affected, even if acutely, by those visitors switching devices, clearing cookies, or using adblockers. Some users will see multiple experiences and conversions will be attributed to the wrong variant. We simply treat this as noise in experiment and control, demanding a larger sample size.</p>
+
+<p>While this is an unavoidable issue, there is one place where we can link visitor cookies— when they have an account on the site and log-in via multiple sessions. In these instances, it should be possible to generate a “change log” of visitor cookies for a given user. In practice, the result would be an <a href="https://en.wikipedia.org/wiki/Slowly_changing_dimension#Type_2:_add_new_row">SCD Type-2 Table</a>, with visitor cookie as the primary ID and a changing column of userids. That way, we can simply join in on visitor cookie id to get a relevant user for a given timeframe.</p>
+
+<figure>
+  <img src="/assets/posts/visitor-lookup/IMG_01.jpg" alt="Example behavior of SCD Type-2" />
+  <figcaption><i><center>An example SCD Type-2 entry for a visitor switching userids</center></i></figcaption>
+</figure>
+
+<p>While this doesn’t solve any issues for those visitors who never create an account (or don’t log-in), it does allow us to be more precise with attribution and backfilling userids in any spot where they’re otherwise unavailable.</p>
+
+<h3 id="solution">Solution</h3>
+
+<p>An SCD Type-2 table is not terribly complex from a SQL standpoint, we can group by visitor cookie and window over all rows, finding differing userids, then setting appropriate start and end dates. That was our first solution.</p>
+
+<p>While it worked for a while, the underlying data actually contained all of the events on our site. As one can imagine, this is quite a costly operation. Job times quickly surpassed a hour, as the entire table was dropped and rebuilt nightly. The process was inefficient and would quickly become untenable as the visitors on our site increased.</p>
+
+<p>In theory, there should be an append-only way to update the table. Storyblocks uses <a href="https://databricks.com/product/delta-lake-on-databricks">Databricks Delta Lake</a>, which supports a number of reliability features and enhancements, but also allows us to use Spark streaming. The ideal end product would be a streaming job, which reads from our incoming events, looks at visitor cookies &amp; userids, and outputs that information as a change log to an SCD Type-2 table in Delta Lake. From there, we can pass that table on to our data warehouse (Amazon Redshift) or use it in Delta for further processing. Sounds simple, right?</p>
+
+<p>For our solution the follow attributes were necessary:</p>
+
+<ul>
+  <li>SCD Type-2 format (duh).</li>
+  <li>Row 1 for a cookie must have a <code class="language-plaintext highlighter-rouge">valid_start_date</code> equal to the first date for that visitor(!) This introduces significant complexity.</li>
+  <li>The <code class="language-plaintext highlighter-rouge">valid_end_date</code> for the <code class="language-plaintext highlighter-rouge">current</code> row will be the timestamp of the last run of the script.</li>
+  <li>We’ll keep a record of <em>all</em> visitors, even those without a userid (it’ll be set to <code class="language-plaintext highlighter-rouge">NULL</code>).</li>
+  <li>A given <code class="language-plaintext highlighter-rouge">valid_end_date</code> must be 1 microsecond less than the next <code class="language-plaintext highlighter-rouge">valid_start_date</code> to prevent two values from being equal.</li>
+  <li>The table should be partitioned somehow.</li>
+</ul>
+
+<h3 id="implementation">Implementation</h3>
+
+<p>It quickly became evident that a real-time stream was impractical:</p>
+
+<ol>
+  <li>Most of our production jobs are semi-streaming and run on 10-15 minute intervals making a true stream overkill.</li>
+  <li>New data depends on existing values: updating our records depends on if we get a new userid/cookie pair or not.</li>
+  <li>Processing <em>all</em> event data for <em>all</em> visitors could be costly. While technically we only need visitors with a userid, the scope of the project required all visitor cookies to be processed (discussed later).</li>
+</ol>
+
+<p>Because of #1, we knew that the solution wouldn’t need to be a true stream. As a result of #2, it became evident that it couldn’t really be a stream at all. Implementing a solution that, for each row, checks existing data &amp; performs either an <code class="language-plaintext highlighter-rouge">UPDATE</code> or <code class="language-plaintext highlighter-rouge">MERGE</code> is not possible using PySpark (I couldn’t crack it, at least). There is, however, a process that allows us to attain pseudo-streaming behavior while ticking our requirements: a combination of Spark <a href="https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html#foreachbatch"><code class="language-plaintext highlighter-rouge">forEachBatch</code></a> and Databricks <a href="https://docs.databricks.com/spark/latest/spark-sql/language-manual/delta-merge-into.html"><code class="language-plaintext highlighter-rouge">MERGE INTO</code></a>.</p>
+
+<p>This is a known implementation, but Delta documentation only provides <a href="https://docs.delta.io/0.8.0/delta-update.html#upsert-from-streaming-queries-using-foreachbatch">very simple examples</a>. The basic premise is as follows:</p>
+
+<ol>
+  <li>Create a stream of the data we’d like to transform. Previously, we were using <em>all</em> events. For this implementation, pageviews will suffice.</li>
+  <li>Batch the stream up using some option like <code class="language-plaintext highlighter-rouge">maxFilesPerTrigger</code>. The stream will also do this automatically.</li>
+  <li><em>For each batch</em> execute some transformation or SQL that will <code class="language-plaintext highlighter-rouge">MERGE INTO</code> a data source.</li>
+</ol>
+
+<p>The really cool thing about <code class="language-plaintext highlighter-rouge">MERGE INTO</code>, often referred to as <code class="language-plaintext highlighter-rouge">UPSERT</code>, is that it allows you to both update and insert in one transaction. As I mentioned, this is crucial for our implementation, since we need to:</p>
+
+<ol>
+  <li>Take each batch of data and generate a SCD Type-2 dataframe to insert into our table.</li>
+  <li>Check if current cookie/user pairs exist in our table.</li>
+  <li>Perform relevant updates and/or inserts.</li>
+</ol>
+
+<p>#2 introduces significant complexity. For a given pair, <em>if</em> the same pair is current, we need only update the <code class="language-plaintext highlighter-rouge">valid_end_date</code>. However, if there’s a new pair, we need to update the end data <em>and</em> insert the new row(s). This is further complicated by the fact that <code class="language-plaintext highlighter-rouge">UPSERT</code> can’t perform multiple operations on one row. We’ll need to split the data into rows that need to be updated and rows to be inserted.</p>
+
+<p>Additional complexity is added by including all visitors to the site. For users only, the streaming job is relatively small. Adding visitors increases the number of rows by roughly two orders of magnitude. After many failed attempts and much deliberation, the best method appeared to be first generating an SCD Type-2 table for visitors with a userid only, then using another data source to meet our additional requirements. Both will be discussed here.</p>
+
+<h3 id="creating-a-scd-type-2-table-for-users">Creating a SCD Type-2 table for users</h3>
+
+<p>The much easier part of this process was creating a change-log table for users only (still at the cookie level), with no adjustments to the first date for the visitor. This idea is very easy to express in SQL— a simple window would suffice, but is more challenging in spark streaming.</p>
+
+<h4 id="foreachbatch">forEachBatch</h4>
+
+<p>Since our events infrastructure at Storyblocks is not-quite-realtime (pageviews update every 15 minutes, I believe), we could save costs with a job that runs a few times daily. <code class="language-plaintext highlighter-rouge">forEachBatch</code> is a nice alternative to pure streaming, since we can perform aggregations on batches that would otherwise prove difficult in a stream. In order to use the sink, we define a function to be executed on each “batch.” It’s then as simple as passing that function to the <code class="language-plaintext highlighter-rouge">writeStream</code> in our job. You can use <code class="language-plaintext highlighter-rouge">maxFilesPerTrigger</code> to specify how many files pass through on each batch or <code class="language-plaintext highlighter-rouge">trigger(once=True)</code> to limit a run to one batch.</p>
+
+<p>Typically, I’ll rebuild the table using an appropriate <code class="language-plaintext highlighter-rouge">maxFilesPerTrigger</code>. Once the job is set, I’ll switch to triggering once— that way we can run the notebook on a schedule and the cell will terminate once the streaming has completed. I haven’t found a way to terminate a cell in a streaming job once all current data has been processed, unfortunately.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>user_mapping = (spark
+                  .readStream
+#                   .option('maxFilesPerTrigger', 1000)
+                  .format('delta')
+                  .table([page view table])
+                  .writeStream
+                  .option([checkpoint location])
+                  .trigger(once=True)
+                  .foreachBatch(user_mapping_upsert)
+                  .outputMode('update')
+                  .start()
+                )
+</code></pre></div></div>
+
+<p>Defining the function itself is very straightforward. The only real call-out is that, if using SQL, be sure to preserve the <code class="language-plaintext highlighter-rouge">sparkSession</code> of the temporary table you create:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def user_mapping_upsert(microBatchOutputDF, batchId):
+
+    microBatchOutputDF.createOrReplaceTempView("updates")
+
+    microBatchOutputDF._jdf.sparkSession().sql(...
+</code></pre></div></div>
+
+<p>Now we just need the <code class="language-plaintext highlighter-rouge">MERGE INTO</code> for each batch.</p>
+
+<h4 id="databricks-upsert">Databricks Upsert</h4>
+
+<p>Databricks has some <a href="https://docs.databricks.com/spark/latest/spark-sql/language-manual/delta-merge-into.html">pretty good documentation</a> here and seems to be adding features fairly regularly. <a href="https://docs.databricks.com/delta/delta-update.html#upsert-from-streaming-queries-using-foreachbatch">This example</a> provided the inspiration for this entire project. An immensely helpful feature would be the ability to perform multiple actions for each row. For example, when matched <code class="language-plaintext highlighter-rouge">INSERT</code> row <em>and</em> <code class="language-plaintext highlighter-rouge">UPDATE SET</code> another row. Presently, we’re limited to inserting <em>only</em> <code class="language-plaintext highlighter-rouge">WHEN NOT MATCHED</code> and updating or deleting <code class="language-plaintext highlighter-rouge">WHEN MATCHED</code>. This added some complexity to our solution.</p>
+
+<p>Since each upsert is being performed on a “batch” of pageviews, our goal was to replicate functionality of a changelog within each batch, e.g. one batch of pageview output should look exactly like the end-product, then assimilate those batches on a per-cookie basis into our table. There will be some joins to a table called <code class="language-plaintext highlighter-rouge">first_dates</code>, that will be discussed later. Note: most of this is pseudo-code intended to get my point across without relaying too much information about our tables. 🙂</p>
+
+<p>In the first CTE, we can generate some basic info on a cookie/user basis, like the previous userid, the next userid, if it’s a first visit for a given cookie, if the userid is new or seen, etc. This stream is limited only to cookies with a userid, so we don’t have to worry about <code class="language-plaintext highlighter-rouge">NULL</code> values. <code class="language-plaintext highlighter-rouge">landed </code> is our timestamp column.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>MERGE INTO dev.user_mapping AS v
+    USING (
+         -- selecting records from pageviews and marking uid changes
+      WITH get_visitor_characteristics AS (
+          -- pull characteristics from pageviews stream
+
+          SELECT
+            u.visitorCookieId
+            , u.userId
+            , u.landed
+
+            -- windows
+            , LAG(u.userid) OVER (PARTITION BY u.visitorCookieId ORDER BY u.landed ASC) as prevUid
+            , LEAD(u.userid) OVER (PARTITION BY u.visitorCookieId ORDER BY u.landed ASC) as nextUid
+
+            -- spark hates aliases, sorry
+            , CASE WHEN LAG(u.userid) OVER (PARTITION BY u.visitorCookieId ORDER BY u.landed ASC) IS NULL
+                THEN TRUE ELSE FALSE END as isFirstVisit
+
+            , CASE WHEN LAG(u.userid) OVER (PARTITION BY u.visitorCookieId ORDER BY u.landed ASC) &lt;&gt; u.userId
+                  AND LEAD(u.userid) OVER (PARTITION BY u.visitorCookieId ORDER BY u.landed ASC) IS NOT NULL
+                    THEN TRUE ELSE FALSE END as isNewUid
+
+          FROM updates AS u
+          WHERE 1 = 1
+      )
+</code></pre></div></div>
+
+<p>Less-than-ideal aliasing in Hive SQL makes for some long column syntax. The next CTE takes those attributes and flattens them, assigning a start and end date based on userid changes. Limiting to <code class="language-plaintext highlighter-rouge">isNewUid</code> or <code class="language-plaintext highlighter-rouge">isFirstVisit</code> ensures there aren’t back-to-back rows with the same userid.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>, collapse_visitors AS (
+
+          -- We have to flatten updates to make sure there aren't two records for a given vcid in a batch.
+          -- Here, we getting distinct records with a uid change and assign a validStartDate and validEndDate
+
+          SELECT
+            gvc.visitorCookieId
+            , gvc.userId
+            , gvc.landed as validStartDate
+
+            -- windows
+            , LEAD(gvc.landed) OVER (PARTITION BY gvc.visitorcookieid ORDER BY gvc.landed ASC) as validEndDate
+
+            , CASE WHEN LEAD(gvc.landed)
+                OVER (PARTITION BY gvc.visitorcookieid ORDER BY gvc.landed ASC) IS NULL
+                  THEN TRUE ELSE FALSE END as isCurrent
+
+            , RANK() OVER (PARTITION BY visitorCookieId ORDER BY gvc.landed ASC) as updateRank
+          FROM get_visitor_characteristics gvc
+          WHERE 1 = 1
+              AND gvc.isNewUid OR gvc.isFirstVisit
+          ORDER BY visitorcookieid, landed DESC
+      )
+
+</code></pre></div></div>
+
+<p>Now, we need to finesse databricks features a bit. Since upsert is limited by the number of operations performed on each row, we’ll split the data into two camps:</p>
+
+<ol>
+  <li>Update existing rows. Note: this should only happen for existing cookies.</li>
+  <li>Insert new rows. This operation will be performed for old and new cookies.</li>
+</ol>
+
+<p>This will require a join to the very table we’re inserting, which is possible through <code class="language-plaintext highlighter-rouge">forEachBatch</code>! To accomplish the desired behavior, we’ll define a <code class="language-plaintext highlighter-rouge">mergeKey</code> that determines what will be inserted. Basically, we’re selectively duplicating data. For data to be inserted (no matter what) we set the <code class="language-plaintext highlighter-rouge">mergeKey</code> to be <code class="language-plaintext highlighter-rouge">NULL</code>. For data to be matched (or inserted if no existing cookie is found), the <code class="language-plaintext highlighter-rouge">mergeKey</code> can be the cookie.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>), segment_update_and_insert AS (
+
+          -- updates existing uids
+          SELECT
+            -- mergeKey lets us chose what is matched and thus inserted
+            cv.visitorCookieId as mergeKey
+
+            , cv.visitorCookieId
+            , cv.userId
+            , cv.validStartDate
+            , CASE WHEN cv.validEndDate IS NULL THEN NULL
+                     ELSE (cv.validEndDate - INTERVAL '1 microsecond') END as validEndDate
+
+            -- windows
+            , MAX(cv.updateRank) OVER (PARTITION BY cv.visitorCookieId) as maxUpdateRank
+
+            , MIN(CASE WHEN cv.userId &lt;&gt; vm.user_id OR vm.user_id IS NULL THEN updateRank ELSE NULL END)
+                OVER (PARTITION BY cv.visitorCookieId) as minUnequalUidUpdateRank
+
+            , CASE WHEN vm.visitor_cookie_id IS NULL THEN TRUE ELSE FALSE END as isNewVcid
+
+            , CASE WHEN vm.user_id IS NULL AND cv.userId IS NOT NULL THEN TRUE ELSE FALSE END as isFirstTimeUid
+
+          FROM collapse_visitors AS cv
+          -- LEFT JOIN vm to grab the minUnequalUpdateRank and isNewVcid
+          LEFT JOIN dev.user_mapping AS vm
+              ON vm.is_current
+              AND cv.visitorCookieId = vm.visitor_cookie_id
+          WHERE 1 = 1
+
+          UNION ALL
+
+          -- inserts changes (uid) for existing vcids
+          SELECT
+            NULL as mergeKey
+            , cv.visitorCookieId
+            , cv.userId
+            , cv.validStartDate
+            , CASE WHEN cv.validEndDate IS NULL THEN NULL
+                    ELSE (cv.validEndDate - INTERVAL '1 microsecond') END as validEndDate
+
+            -- windows
+            , MAX(cv.updateRank) OVER (PARTITION BY cv.visitorCookieId) as maxUpdateRank
+
+            , MIN(CASE WHEN cv.userId &lt;&gt; vm.user_id THEN updateRank ELSE NULL END)
+                OVER (PARTITION BY cv.visitorCookieId) as minUnequalUidUpdateRank
+
+            , CASE WHEN vm.visitor_cookie_id IS NULL THEN TRUE ELSE FALSE END as isNewVcid
+
+            , False as isFirstTimeUid
+
+          FROM collapse_visitors AS cv
+          -- inner joining vm— we only want to update existing rows with a userid, all others will be inserted in the other SELECT
+          INNER JOIN dev.user_mapping AS vm
+              ON vm.is_current
+              AND cv.visitorCookieId = vm.visitor_cookie_id
+          WHERE 1 = 1
+          -- we want all change data UNLESS the first row uid is equal to what we already have.
+              AND NOT (cv.userId = vm.user_id AND cv.updateRank = 1)
+          ORDER BY mergeKey, validStartDate ASC
+      )
+</code></pre></div></div>
+
+<p>Especially important is the filter on the second union— <code class="language-plaintext highlighter-rouge">AND NOT (cv.userId = vm.user_id AND cv.updateRank = 1)</code>. This ensures that if a visitor <em>returns</em> to the site with the same userid in a batch then switches to a new userid, we won’t record the duplicate id, but we will capture the change. The left join and inner join help to select pertinent data from each source, but there is still more filtering to be done. Note the use of <code class="language-plaintext highlighter-rouge">updateRank</code> to get a <code class="language-plaintext highlighter-rouge">maxUpdateRank</code> and a <code class="language-plaintext highlighter-rouge">minUnequalUidUpdateRank</code>. To avoid overlap, we set the <code class="language-plaintext highlighter-rouge">validEndDate</code> as one microsecond less the previous start date. Now we can select from that data with an admittedly complex filter to get only the rows we desire.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>, final_select AS (
+      SELECT
+        sui.mergeKey
+        , sui.visitorCookieId
+        , sui.userId
+
+        -- IF the new user was previously a visitor, we want to change the first validStartDate to be the first visitor date.
+        , sui.validStartDate
+        , sui.validEndDate
+        , sui.isCurrent
+
+      FROM segment_update_and_insert AS sui
+      WHERE 1 = 1
+       AND (mergeKey IS NULL
+       -- NOTE: these filters are for the first select in segment_update_and_insert
+             OR (mergeKey IS NOT NULL
+               AND (sui.isNewVcid
+                 OR sui.updateRank = sui.minUnequalUidUpdateRank
+                   )
+                )
+            )
+    )
+</code></pre></div></div>
+
+<p>The filter <code class="language-plaintext highlighter-rouge">WHERE</code> clause is basically saying, “Insert all of the rows we said, but for the matched rows only select those that are new visitors or those where we see the first userid change based on existing data.” Now, we take this big ‘ol query and insert on <code class="language-plaintext highlighter-rouge">mergeKey</code> (and our partition <code class="language-plaintext highlighter-rouge">vcid_first_two</code>).</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>) AS up
+    ON (v.vcid_first_two = up.vcid_first_two AND v.visitor_cookie_id = up.mergeKey)
+</code></pre></div></div>
+
+<p>The last bit of complexity comes from the update statement:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-- these rows are included in the first select of segment_update_and_insert
+    WHEN MATCHED
+      AND v.user_id &lt;&gt; up.userId
+      AND v.is_current
+    THEN UPDATE SET v.valid_end_date = (up.validStartDate - INTERVAL '1 microsecond'), v.is_current = False
+
+    -- this statement applies to all new vcid's and any vcid where we set mergeKey IS NULL
+    WHEN NOT MATCHED THEN
+      INSERT (visitor_cookie_id
+              , user_id
+              , valid_start_date
+              , valid_end_date
+              , is_current
+              , vcid_first_two
+              )
+      VALUES (up.visitorCookieId
+              , up.userId
+              , up.validStartDate
+              , up.validEndDate
+              , up.isCurrent
+              , up.vcid_first_two
+              )
+        """)
+</code></pre></div></div>
+
+<p>When we match a userid in the existing table that is current and we have a differing userid incoming, we’ll need to set the end date to match the rest of our table. This is why matched rows are filtered to <code class="language-plaintext highlighter-rouge">sui.updateRank = sui.minUnequalUidUpdateRank</code>. When not matched, we can insert the new values. Applying this SQL to each batch of a pageviews stream results in a changelog for every visitor with a userid.</p>
+
+<h3 id="using-a-visitor-first-dates-table-to-meet-project-requirements">Using a <em>Visitor First Dates</em> table to meet project requirements</h3>
+
+<p>Due to infrastructure demands, we need a few more things from the output generated by mapping users.</p>
+
+<ol>
+  <li>We need the very first <code class="language-plaintext highlighter-rouge">valid_start_date</code> to be the first timestamp we saw the <em>visitor</em>, not the user. That means we’ll need pageviews with <code class="language-plaintext highlighter-rouge">NULL</code> userids, too.</li>
+  <li>For every visitor <em>without</em> a userid, we want their first timestamp and a <code class="language-plaintext highlighter-rouge">NULL</code> for userid.</li>
+</ol>
+
+<p>While simple, these changes require us from gathering info for users to <em>all visitors</em>, which is about a two order of magnitude increase in total visitor count.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def first_dates_upsert(microBatchOutputDF, batchId):
+
+    microBatchOutputDF.createOrReplaceTempView("updates")
+
+    # pass spark sql. Note: ._jdf.sparkSession() is necessary, as we have to use the same session as
+    # the createOrReplaceTempView command above
+    microBatchOutputDF._jdf.sparkSession().sql(f"""
+    MERGE INTO dev.first_dates AS t
+    USING (
+    WITH visitor_characteristics AS (
+      -- we want each vcid, landed, and the first non-null value for visitor properties. ORDER BY () IS NULL + landed guarantees NULLS last.
+      SELECT
+        visitorCookieId
+        , landed
+        , MIN(u.landed) OVER (PARTITION BY u.visitorCookieId) as firstDate
+      FROM updates AS u
+      WHERE 1 = 1
+      )
+      -- collapse to first date (one row per vcid)
+      SELECT
+        DISTINCT v.visitorCookieId
+        , v.firstDate
+        , date_format(v.firstDate, 'yyyy-MM-dd') as firstDay
+        , LEFT(v.visitorCookieId, 2) as vcid_first_two
+      FROM visitor_characteristics AS v
+      GROUP BY 1,2,3,4,5,6,7,8,9,10
+    ) AS s
+    ON (s.vcid_first_two = LEFT(t.visitor_cookie_id, 2) AND t.visitor_cookie_id = s.visitorCookieId)
+
+    WHEN MATCHED
+      AND s.vcid_first_two = LEFT(t.visitor_cookie_id, 2)
+      AND s.firstDate &lt; t.first_date
+    THEN UPDATE SET t.first_date = s.firstDate, t.first_day = s.firstDay
+
+    -- only insert new values
+    WHEN NOT MATCHED THEN
+      INSERT (visitor_cookie_id
+              , first_date
+              , first_day
+              , vcid_first_two
+              )
+      VALUES (s.visitorCookieId
+              , s.firstDate
+              , s.firstDay
+              , s.vcid_first_two
+              )
+        """)
+</code></pre></div></div>
+
+<p>We can achieve this by again using <code class="language-plaintext highlighter-rouge">UPSERT</code> with <code class="language-plaintext highlighter-rouge">forEachBatch</code> to create a visitor log of first dates. Streaming off pageviews, we’ll window over all rows in the update, getting the first non-null value for each desired characteristic. Collapsing the data to a single row per cookie allows us to merge into existing data.</p>
+
+<p>Though the stream should process in order, we can add an update condition to retroactively correct dates if an earlier timestamp is found. If not, we’ll insert.</p>
+
+<p>For our user mapping upsert, we can add in a clause to check and apply the first date for pertinent rows. Now, the first row will have the desired timestamp.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>, CASE WHEN (sui.isNewVcid OR sui.isFirstTimeUid)
+                  AND sui.updateRank = sui.minUnequalUidUpdateRank
+               THEN LEAST(sui.validStartDate, sui.firstDate) ELSE sui.validStartDate END as validStartDate
+</code></pre></div></div>
+
+<p>In order to assimilate our data into the desired format, a final <code class="language-plaintext highlighter-rouge">MERGE INTO</code> will be used once both streams have been completed. By using string formatting, we can insert timestamps to ensure only the most recent batch is inserted. Note, the logic and behavior here is slightly different than our user mapping example.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>merge_into = f"""
+MERGE INTO dev.visitor_lookup v
+USING (
+  WITH union_visitors AS (
+    SELECT
+      u.visitor_cookie_id
+      , u.user_id
+      , u.valid_start_date
+      , u.valid_end_date
+      , u.is_current
+
+      , u.first_date
+      , u.start_day
+      , RANK() OVER (PARTITION BY visitor_cookie_id ORDER BY valid_start_date asc) as update_rank
+    FROM dev.user_mapping u
+    WHERE 1 = 1
+      AND u.valid_start_date &gt; '{max_lookup_timestamp}'
+      AND u.valid_start_date &lt;= '{max_first_date_timestamp}'
+
+    UNION ALL
+
+    SELECT
+      f.visitor_cookie_id
+      , NULL as user_id
+      , f.first_date as valid_start_date
+      , NULL as valid_end_date
+      , TRUE as is_current
+
+      , f.first_date
+      , date_format(f.first_date, 'yyyy-MM-dd') as start_day
+      , 1 as update_rank
+    FROM dev.first_dates f
+    LEFT JOIN dev.user_mapping u
+      ON f.vcid_first_two = u.vcid_first_two
+      AND u.is_current
+      AND f.visitor_cookie_id = u.visitor_cookie_id
+    WHERE 1 = 1
+      AND u.visitor_cookie_id IS NULL
+      AND f.first_date &gt; '{max_lookup_timestamp}'
+      AND f.first_date &lt;= '{max_first_date_timestamp}'
+  )
+  -- insert all rows EXCEPT for existing vcid's with NULL user_id's
+  -- we only want to update those (next union)
+  SELECT
+    NULL as merge_key
+    , update_rank
+    , u.visitor_cookie_id
+    , u.user_id
+    , u.valid_start_date
+    , CASE WHEN u.is_current THEN NULL ELSE u.valid_end_date END as valid_end_date
+    , u.is_current
+
+    , u.start_day
+    , LEFT(u.visitor_cookie_id, 2) AS vcid_first_two
+  FROM union_visitors u
+  LEFT JOIN dev.visitor_lookup v
+    ON LEFT(u.visitor_cookie_id, 2) = v.vcid_first_two
+    AND v.is_current
+    AND v.visitor_cookie_id = u.visitor_cookie_id
+  WHERE 1 = 1
+    AND NOT (
+      u.update_rank = 1
+      AND u.user_id IS NOT NULL
+      AND v.visitor_cookie_id IS NOT NULL
+      AND v.user_id IS NULL
+            )
+
+  UNION ALL
+
+  -- dupe first update row to change existing rows
+  -- we want to update old CURRENT user_id rows and rows with a NULL user_id
+  SELECT
+    u.visitor_cookie_id as merge_key
+    , update_rank
+    , u.visitor_cookie_id
+    , u.user_id
+    , u.valid_start_date
+    , CASE WHEN u.is_current THEN NULL ELSE u.valid_end_date END as valid_end_date
+    , u.is_current
+
+    , u.start_day
+    , LEFT(u.visitor_cookie_id, 2) AS vcid_first_two
+  FROM union_visitors u
+  LEFT JOIN dev.visitor_lookup v
+    ON LEFT(u.visitor_cookie_id, 2) = v.vcid_first_two
+    AND v.is_current
+    AND v.visitor_cookie_id = u.visitor_cookie_id
+  WHERE 1 = 1
+    AND u.update_rank = 1
+    AND u.user_id IS NOT NULL
+    AND v.visitor_cookie_id IS NOT NULL
+) AS up
+ON (up.vcid_first_two = v.vcid_first_two AND up.merge_key = v.visitor_cookie_id)
+
+WHEN MATCHED
+  AND v.is_current
+  AND v.user_id IS NOT NULL
+THEN UPDATE SET
+  v.valid_end_date = up.valid_start_date - INTERVAL '1 microsecond'
+  , v.is_current = FALSE
+
+WHEN MATCHED
+  AND v.is_current
+  AND v.user_id IS NULL
+THEN UPDATE SET
+  v.valid_end_date = up.valid_end_date
+  , v.is_current = up.is_current
+  , v.user_id = up.user_id
+
+WHEN NOT MATCHED
+THEN INSERT (visitor_cookie_id
+        , user_id
+        , valid_start_date
+        , valid_end_date
+        , is_current
+        , start_day
+        , vcid_first_two
+        )
+
+VALUES (up.visitor_cookie_id
+        , up.user_id
+        , up.valid_start_date
+        , up.valid_end_date
+        , up.is_current
+        , up.start_day
+        , up.vcid_first_two
+        )
+"""
+
+spark.sql(merge_into)
+</code></pre></div></div>
+
+<p>Lastly, current row timestamps are updated</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>spark.sql(f"""
+            UPDATE dev.visitor_lookup
+            SET valid_end_date = '{max_first_date_timestamp}'
+            WHERE is_current
+          """)
+</code></pre></div></div>
+
+<p>Finally, we have a working <em>visitor lookup</em> table with all of the necessary attributes.</p>
+
+<h3 id="partitioning">Partitioning</h3>
+
+<p>All tables were initially partitioned on date— this is Storyblocks’ convention for event tables. This proved quite problematic and slow for a few reasons.</p>
+
+<ol>
+  <li>We had to disable parallelism for ordered processing of data. Partitioning on date implies that writing to multiple partitions processes multiple dates, which breaks a table like this one since we rely on ordered processing of batches.</li>
+  <li>Most joins in our create script are on cookie. To get any benefit out of our partitioning, we needed to add range joins on both date and timestamp, which was cumbersome and confusing.</li>
+  <li>I have fears that as we scale, there will become an increasingly skewed number of visitors by date. Partitioning by cookie ensures no partition skew, since cookies are evenly distributed.</li>
+  <li>We can directly control the number of partitions by using 1, 2,or 3 characters of the visitor cookie. Date partitioned tables will have linearly increasing partitions.</li>
+</ol>
+
+<p>Switching to partitioning by the first two characters of visitor cookie drastically improved the performance or our script and makes sense for the type of joins that we’ll primarily use on this table.</p>
+
+<h3 id="schematic">Schematic</h3>
+
+<p>I’m sure that wasn’t entirely clear, so here’s a brief diagram explaining the process:</p>
+
+<figure>
+  <img src="/assets/posts/visitor-lookup/visitor_lookup.png" alt="Execution schematic" />
+  <figcaption><i><center>An example SCD Type-2 entry for a visitor switching userids</center></i></figcaption>
+</figure>
+
+<h3 id="applications">Applications</h3>
+
+<ol>
+  <li>We’re currently using the script as a part of our new <em>attribution</em> framework for measuring marketing spend and conversion. The output table is joined to visitor lookup to backfill user id’s and track conversions prior to registration on site. This has resulted in tangibly better tracking, picking up 65% more user sessions over our old method and having real impacts on how marketing makes spending decisions.</li>
+  <li>The same use case can be applied to backfilling AB Testing user id’s (and it will be, hopefully)</li>
+</ol>
+
+<h3 id="checks-and-tests">Checks and tests</h3>
+
+<p>There’s no doubt this is a <em>very very</em> complex solution. Honestly, I’d prefer a simpler method and I think one <em>should</em> exist. If we were able to process each row individually, there might be a much better way to achieve the same result.</p>
+
+<p>Unfortunately, after much trial and error this was the best result I could come to. I periodically run some of the following checks to make sure the script is working as expected:</p>
+
+<p><strong>Start lag:</strong> for each visitor cookie, is the previous valid_end_date equal to the valid_start_date - 1 microsecond?</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>%sql
+WITH start_lag AS (
+SELECT
+  visitor_cookie_id
+  , valid_start_date
+  , valid_end_date
+  , LAG(valid_end_date) OVER (PARTITION BY visitor_cookie_id ORDER BY valid_start_date ASC) as start_lag
+FROM dev.visitor_lookup
+WHERE 1 = 1
+  AND user_id IS NOT NULL
+)
+SELECT
+  visitor_cookie_id
+  , valid_start_date
+  , valid_end_date
+  , start_lag
+FROM start_lag AS sl
+WHERE 1 = 1
+  AND start_lag IS NOT NULL AND valid_end_date IS NOT NULL AND start_lag &lt;&gt; valid_start_date - INTERVAL '1 microsecond'
+  AND start_lag &lt; current_date - 1
+</code></pre></div></div>
+
+<p><strong>Current count:</strong> does each cookie have only one current row?</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>%sql
+SELECT
+  visitor_cookie_id
+  , COUNT(CASE WHEN is_current THEN visitor_cookie_id END) as current_count
+FROM dev.visitor_lookup
+WHERE 1 = 1
+GROUP BY 1
+HAVING current_count &lt;&gt; 1
+</code></pre></div></div>
+
+<p><strong>Start dates:</strong> are there duplicated start dates for any cookies? <em>Note: there is one cookie that has two start dates… This is pretty bizarre, but it happens even when I rebuild the table. I’m not concerned given the rarity, but it is curious.</em></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>%sql
+SELECT
+  visitor_cookie_id
+  , valid_start_date
+  , COUNT(*) as current_count
+FROM dev.visitor_lookup
+WHERE 1 = 1
+GROUP BY 1,2
+HAVING current_count &lt;&gt; 1
+</code></pre></div></div>
+
+<p><strong>End dates:</strong> are any end dates before start dates? <em>Again, for the same cookie there are two user id’s with end dates one microsecond prior to start. It might be worth investigating the behavior of this visitor to find out how this happened!</em></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>%sql
+SELECT
+  *
+FROM dev.visitor_lookup
+WHERE 1 = 1
+  AND valid_end_date &lt; valid_start_date
+</code></pre></div></div>
+
+  </div><a class="u-url" href="/data-eng/2021/04/27/scd-type-2.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+    <data class="u-url" href="/%20/"></data>
+
+    <div class="wrapper">
+
+        <div class="footer-col-wrapper">
+            <div class="footer-col">
+                <p class="feed-subscribe">
+                    <a href="/feed.xml">
+                        <svg class="svg-icon orange">
+                            <use xlink:href="/assets/minima-social-icons.svg#rss"></use>
+                        </svg><span>Subscribe</span>
+                    </a>
+                </p>
+                <ul class="contact-list">
+                    <li class="p-name">Matt Palmer</li>
+                    <li><a class="u-email" href="mailto:hello@mattpalmer.io">hello@mattpalmer.io</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <p>Data Enginner at Underline &amp; Swarthmore College grad. You can find me at the gym,  climbing rocks, or on a trail when not at work.
+</p>
+            </div>
+        </div>
+
+        <div class="social-links"><ul class="social-media-list"><li><a rel="me" href="https://github.com/mattppal" title="mattppal"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg></a></li><li><a rel="me" href="https://www.linkedin.com/in/matt-palmer" title="matt-palmer"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#linkedin"></use></svg></a></li><li><a rel="me" href="https://twitter.com/mattppal" title="mattppal"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg></a></li><li><a rel="me" href="https://keybase.io/mattpal" title="mattpal"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#keybase"></use></svg></a></li></ul>
+</div>
+
+    </div>
+
+    <script type="text/typescript" src="./assets/utm.ts"></script>
+
+</footer></body>
+
+</html>

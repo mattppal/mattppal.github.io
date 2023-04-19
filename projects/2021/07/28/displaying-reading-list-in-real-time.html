@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Using Jekyll Hooks to dynamically generate site content from external sources. | Matt Palmer</title>
+<meta name="generator" content="Jekyll v4.3.2" />
+<meta property="og:title" content="Using Jekyll Hooks to dynamically generate site content from external sources." />
+<meta name="author" content="Matt Palmer" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Data Enginner at Underline &amp; Swarthmore College grad. You can find me at the gym, climbing rocks, or on a trail when not at work." />
+<meta property="og:description" content="Data Enginner at Underline &amp; Swarthmore College grad. You can find me at the gym, climbing rocks, or on a trail when not at work." />
+<meta property="og:site_name" content="Matt Palmer" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-07-28T00:00:00+00:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Using Jekyll Hooks to dynamically generate site content from external sources." />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Matt Palmer"},"dateModified":"2021-07-28T00:00:00+00:00","datePublished":"2021-07-28T00:00:00+00:00","description":"Data Enginner at Underline &amp; Swarthmore College grad. You can find me at the gym, climbing rocks, or on a trail when not at work.","headline":"Using Jekyll Hooks to dynamically generate site content from external sources.","mainEntityOfPage":{"@type":"WebPage","@id":"/projects/2021/07/28/displaying-reading-list-in-real-time.html"},"url":"/projects/2021/07/28/displaying-reading-list-in-real-time.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" title="Matt Palmer" /><script async src="https://www.googletagmanager.com/gtag/js?id=G-EC2ZQ7Y8TD"></script>
+<script>
+  window['ga-disable-G-EC2ZQ7Y8TD'] = window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes" || navigator.msDoNotTrack === "1";
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+
+  gtag('config', 'G-EC2ZQ7Y8TD');
+</script>
+
+<link rel="apple-touch-icon" sizes="120x120" href="/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+<link rel="manifest" href="/favicon/site.webmanifest">
+<link rel="mask-icon" href="/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="theme-color" content="#ffffff"></head>
+<body><header class="site-header">
+
+    <div class="wrapper"><a class="site-title" rel="author" href="/">Matt Palmer</a><nav class="site-nav">
+            <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+            <label for="nav-trigger">
+                <span class="menu-icon">
+                    <svg viewBox="0 0 18 15" width="18px" height="15px">
+                        <path
+                            d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z" />
+                    </svg>
+                </span>
+            </label>
+
+            <div class="trigger"><a class="page-link" href="/about/">about</a><a class="page-link" href="/art/">art</a><a class="page-link" href="/books/">books</a><a class="page-link" href="/cv">resume</a><a class="page-link" href="/writing/">writing</a></div>
+        </nav></div>
+</header><main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Using Jekyll Hooks to dynamically generate site content from external sources.</h1>
+    <p class="post-meta"><time class="dt-published" datetime="2021-07-28T00:00:00+00:00" itemprop="datePublished">
+        Jul 28, 2021
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <figure>
+  <center><img src="/assets/posts/goodreads/header.png" alt="Currently Reading Header" /></center>
+</figure>
+
+<h3 id="preface">Preface</h3>
+
+<p>You may have noticed my fancy <a href="/books">books</a> page, which contains an up-to-date list of what I’m reading and what I’ve finished. That page is powered by Goodreads and updates on a daily basis. Initially, I was updating the page manually with a local build of my site and a push to GitHub, but I wanted to automate it— I already log my books on Goodreads, why shouldn’t that be the end of it?</p>
+
+<p>Goodreads profiles can be public (and <a href="https://www.goodreads.com/user/show/89626431-matt-palmer">my profile is</a>). With a bit of digging, you can find RSS feeds for Bookshelves, i.e. <em>Reading</em>, <em>Read</em>, <em>To-Read</em>. Once I had the links, I just needed to loop through the feed items + generate some Jekyll data and I’d be set, right?</p>
+
+<h3 id="reality-check">Reality check</h3>
+
+<p>In reality, the task is a little more complex. Here were the most prominent challenges:</p>
+
+<ol>
+  <li>Since I was building my site locally and pushing to GitHub pages, I would have to rebuild locally if I wanted the lists to update— that’s no fun. This was resolved through GitHub actions, which I’ll discuss shortly.</li>
+  <li>I initially went the route of using a Generator to build <code class="language-plaintext highlighter-rouge">YAML</code> files with the RSS items. That was problematic because of how Jekyll renders a website: Generators that fetch data and add it to the site are prioritized <em>after</em> the site is rendered. In practice it meant I had to build my site twice locally for changes to propagate (once to change the files and a second time to actually see them rendered in the browser). Additionally, when using Generators with a GitHub action to build the site, I was unable to overwrite the necessary files in the master branch, so my solution was completely non-functional with a remote build!</li>
+  <li>There is remarkably little documentation/discussion on how or when to use a Generator, Hook, or other custom plugin. I ultimately found <a href="https://humanwhocodes.com/blog/2019/04/jekyll-hooks-output-markdown/">this blog</a> helpful, along with the (sparse) Jekyll documentation on <a href="https://jekyllrb.com/docs/plugins/hooks/">hooks</a> and <a href="https://jekyllrb.com/docs/plugins/">plugins</a>.</li>
+</ol>
+
+<p>After my initial crack at Generator -&gt; GitHub Action -&gt; Reading List failed, I went back to the drawing board.</p>
+
+<h3 id="the-solution">The Solution</h3>
+
+<p>Until now, this post has been relatively boring with little useful information, so I’ll try to make it worth your time.</p>
+
+<p>My plugin needs to:</p>
+
+<ol>
+  <li>Run at build.</li>
+  <li>Fetch and parse items from my Goodreads feed.</li>
+  <li>Inject that into my site (somehow) so I can loop through them in a list with <a href="https://shopify.github.io/liquid/basics/introduction/">Liquid</a>.</li>
+  <li>Have the ability to run via a GitHub action, i.e. be a truly automated solution.</li>
+</ol>
+
+<h4 id="fetching-rss-items">Fetching RSS items</h4>
+
+<p>This was surprisingly simple, considering I had no Ruby knowledge beforehand. I used <em>Open URI</em> to get the URL, the <em>RSS</em> library to parse the feeds, and <em>Nokogiri</em> for some html parsing, thought that wasn’t strictly necessary.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>reading_url = [your-url-for-reading-books]
+read_url = [your-url-for-read-books]
+
+def get_rss_items(input_url)
+    item_list = []
+    URI.open(input_url) do |rss|
+        feed = RSS::Parser.parse(rss)
+
+        feed.items.each do |item|
+            parsed = Nokogiri::HTML.parse(item.description)
+
+            author = item.description.match(/author:\s*((\w|\s|\.|\/)*)/)[1]
+            date_read = item.description.match(/read\s*at:\s*((\d|\/)*)/)[1]
+            img_src = parsed.xpath("//img").attr('src').text
+            url = parsed.xpath("//a").attr('href').text
+            guid = item.link.split('/')[-1].split('?')[0]
+
+            payload = {'title' =&gt; item.title,
+                        'link' =&gt; url,
+                        'img_src' =&gt; img_src,
+                        'date_read' =&gt; item.pubDate.to_date,
+                        'author' =&gt; author,
+                        'guid' =&gt; guid
+            }
+            puts item.title
+            item_list.append(payload)
+        end
+    end
+    return item_list
+end
+</code></pre></div></div>
+
+<p>We start by opening the URL as <code class="language-plaintext highlighter-rouge">rss</code>, then passing that variable to our parser. A simple Ruby loop says that, for each item in the feed, we want to parse the description and other attributes (using Nokogiri and some regex) and assign them to a payload. We then print the title to the logs and append the payload to our list. The function then returns that list. Now all we need to do is get that into our site!</p>
+
+<h4 id="using-github-actions-to-build-the-site-on-a-schedule">Using GitHub Actions to build the site on a schedule</h4>
+
+<p>After a bit of Googling, I was able to find <a href="https://github.com/jeffreytse/jekyll-deploy-action">this action</a> that automates Jekyll deploys. Setting it up is pretty simple.</p>
+
+<ol>
+  <li>Create a <code class="language-plaintext highlighter-rouge">YAML</code> file in your <a href="https://github.com/mattppal/mattppal.github.io/blob/master/.github/workflows/build-jekyll.yaml">GitHub pages repository</a></li>
+  <li>Configure the <code class="language-plaintext highlighter-rouge">YAML</code> file to your preferred settings using the action docs. Note: this changes how your GitHub page functions. Rather than queuing off a <code class="language-plaintext highlighter-rouge">master</code> branch, you’re building the site, outputting it to a separate branch (<code class="language-plaintext highlighter-rouge">gh-pages</code> is the default) <em>then</em> building the page off that branch. It requires messing around with some settings, but I found the author of the action’s guide to be sufficient.</li>
+  <li>Run the action on a schedule!</li>
+</ol>
+
+<p>Now that we have the action firing, the site is being built remotely! Cool! But it’s completely indifferent from before— not cool!</p>
+
+<h4 id="loading-to-site-data-pre-render">Loading to site data pre-render</h4>
+
+<p>We need to get our Ruby function running at the point just before the site is built. That way, we can create a variable accessible to the site/page/doc to iterate through. digging through the <a href="https://jekyllrb.com/docs/plugins/hooks/">Jekyll docs</a>, I found the Hook page. From the syntax, it appears to do just what we want:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Jekyll::Hooks.register :site, :pre_render do |site|
+  # code to call after Jekyll renders a page
+end
+</code></pre></div></div>
+
+<p>Using the <em>site</em> and <em>pre_render</em> arguments, we should be able to generate content prior to rendering and make that available to the entire site!</p>
+
+<p>Wrapping our function in the Hook register:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>require 'rss'
+require 'open-uri'
+require 'yaml'
+require 'nokogiri'
+
+Jekyll::Hooks.register :site, :pre_render do |site, payload|
+    reading_url = [your-url-for-reading-books]
+    read_url = [your-url-for-read-books]
+
+    def get_rss_items(input_url)
+        item_list = []
+        URI.open(input_url) do |rss|
+            feed = RSS::Parser.parse(rss)
+            # Add fake virtual documents to the collection
+            feed.items.each do |item|
+                parsed = Nokogiri::HTML.parse(item.description)
+
+                author = item.description.match(/author:\s*((\w|\s|\.|\/)*)/)[1]
+                date_read = item.description.match(/read\s*at:\s*((\d|\/)*)/)[1]
+                img_src = parsed.xpath("//img").attr('src').text
+                url = parsed.xpath("//a").attr('href').text
+                guid = item.link.split('/')[-1].split('?')[0]
+
+                payload = {'title' =&gt; item.title,
+                            'link' =&gt; url,
+                            'img_src' =&gt; img_src,
+                            'date_read' =&gt; item.pubDate.to_date,
+                            'author' =&gt; author,
+                            'guid' =&gt; guid
+                }
+                puts item.title
+                item_list.append(payload)
+            end
+        end
+        return item_list
+    end
+
+    site.data['reading'] = get_rss_items(reading_url)
+    site.data['read'] = get_rss_items(read_url)
+
+end
+</code></pre></div></div>
+
+<p>Boom! Now we’re storing our lists in <code class="language-plaintext highlighter-rouge">site.data['reading']</code> and <code class="language-plaintext highlighter-rouge">site.data['read']</code>, respectively. Saving this to a Ruby file and popping it in the <code class="language-plaintext highlighter-rouge">_plugins</code> directory make it run on every build. Now that the data is accessible to the site and pages therein, Liquid makes it simple to iterate through them. Since things are always changing, you can checkout my current Goodreads script <a href="https://github.com/mattppal/mattppal.github.io/blob/master/_plugins/goodreads.rb">here</a>.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;div&gt;
+{% for book in site.data['reading'] %}
+    &lt;a href= "{{ book.link }}"&gt;
+      &lt;div&gt;
+        &lt;h5&gt;{{ book.title }}&lt;/h5&gt;
+          &lt;p&gt;{{ book.author }}&lt;/p&gt;
+        &lt;!-- &lt;small&gt;{{ book.date_read }}&lt;/small&gt; --&gt;
+      &lt;/div&gt;
+    &lt;/a&gt;
+{% endfor %}
+&lt;/div&gt;
+
+## Read
+
+&lt;div&gt;
+{% for book in site.data['read'] %}
+    &lt;a href= "{{ book.link }}"&gt;
+      &lt;div&gt;
+        &lt;h5&gt;{{ book.title }}&lt;/h5&gt;
+          &lt;p&gt;{{ book.author }}&lt;/p&gt;
+        &lt;!-- &lt;small&gt;{{ book.date_read }}&lt;/small&gt; --&gt;
+      &lt;/div&gt;
+    &lt;/a&gt;
+{% endfor %}
+&lt;/div&gt;
+</code></pre></div></div>
+
+<p>And voila! The <a href="/books">books</a> page arrives at it’s present form. Marking a book <em>read</em> or <em>reading</em> on Goodreads will flow through to the site nightly and 100% automatically!</p>
+
+<p>I’d love to hear if you found this helpful or implemented your own solution. Don’t hesitate to reach out via one of the links on-site!</p>
+
+  </div><a class="u-url" href="/projects/2021/07/28/displaying-reading-list-in-real-time.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+    <data class="u-url" href="/%20/"></data>
+
+    <div class="wrapper">
+
+        <div class="footer-col-wrapper">
+            <div class="footer-col">
+                <p class="feed-subscribe">
+                    <a href="/feed.xml">
+                        <svg class="svg-icon orange">
+                            <use xlink:href="/assets/minima-social-icons.svg#rss"></use>
+                        </svg><span>Subscribe</span>
+                    </a>
+                </p>
+                <ul class="contact-list">
+                    <li class="p-name">Matt Palmer</li>
+                    <li><a class="u-email" href="mailto:hello@mattpalmer.io">hello@mattpalmer.io</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <p>Data Enginner at Underline &amp; Swarthmore College grad. You can find me at the gym,  climbing rocks, or on a trail when not at work.
+</p>
+            </div>
+        </div>
+
+        <div class="social-links"><ul class="social-media-list"><li><a rel="me" href="https://github.com/mattppal" title="mattppal"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg></a></li><li><a rel="me" href="https://www.linkedin.com/in/matt-palmer" title="matt-palmer"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#linkedin"></use></svg></a></li><li><a rel="me" href="https://twitter.com/mattppal" title="mattppal"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg></a></li><li><a rel="me" href="https://keybase.io/mattpal" title="mattpal"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#keybase"></use></svg></a></li></ul>
+</div>
+
+    </div>
+
+    <script type="text/typescript" src="./assets/utm.ts"></script>
+
+</footer></body>
+
+</html>

@@ -1,0 +1,1612 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2023-04-19T03:14:57+00:00</updated><id>/feed.xml</id><title type="html">Matt Palmer</title><subtitle>Data Enginner at Underline &amp; Swarthmore College grad. You can find me at the gym,  climbing rocks, or on a trail when not at work.
+</subtitle><author><name>Matt Palmer</name><email>hello@mattpalmer.io</email></author><entry><title type="html">🌶️ Hot Takes on the Modern Data Stack</title><link href="/data/2023/04/07/hot-takes.html" rel="alternate" type="text/html" title="🌶️ Hot Takes on the Modern Data Stack" /><published>2023-04-07T00:00:00+00:00</published><updated>2023-04-07T00:00:00+00:00</updated><id>/data/2023/04/07/hot-takes</id><content type="html" xml:base="/data/2023/04/07/hot-takes.html"><![CDATA[<h2 id="intro">Intro</h2>
+
+<p>Hot on the heels of <a href="/data/2023/04/01/data-council-austin.html">Data Council Austin</a>, I’ve been thinking about the data landscape— both from what I’ve seen firsthand and gleaned from discussions, forums, and blog posts. I’m grateful for my exposure to a spectrum of data teams, from going 0 ➡️ 1 to driving product at scale. Simultaneously, it’s been refreshing to see community growth, led by <a href="https://www.getdbt.com/community/join-the-community/">dbt</a>, <a href="https://locallyoptimistic.com/">Locally Optimistic</a>, <a href="https://www.operationalanalytics.club/">Operational Analytics</a> and others, that has shed light on what it means to be a data practitioner.</p>
+
+<p>Through these media, I’ve found common pain-points and trends that I felt warranted a blog post. The data landscape has changed drastically in the past 5 years, so here’s what I feel are some (potentially painful) truths:</p>
+
+<h2 id="-hot-takes">🔥 Hot takes</h2>
+
+<p>❗️ <strong>dbt lacks some basic functionality expected of a best-in-class tool</strong></p>
+
+<p>I wish I was wrong here, but from my experience with dbt Core, there’s much to be desired. While dbt was <em>revolutionary</em> in the early days of the MDS, little has changed since then. The lack of column-level lineage, basic documentation tooling, and manual nature of the product scream potential for a disruptive incumbent. To implement dbt from scratch, one of the following is necessary:</p>
+
+<ul>
+  <li>Know someone who can guide you through common pitfalls.</li>
+  <li>Do an ungodly amount of research to find the libraries necessary to automate the painful parts.</li>
+  <li>Grind through the implementation, make a ton of mistakes, and re-write your entire codebase.</li>
+</ul>
+
+<p>To me, dbt will always live on as a <em>framework</em>. By no means am I dismissing the value of the tool, but the architecture of dbt is dated. Like Airflow, this is a major disadvantage— they have some major tech-debt and it’ll be tough to implement foundational changes. I suspect the dbt team realizes this, hence their shift in stance towards “enabling an ecosystem” for features like <a href="https://github.com/dbt-labs/dbt-core/discussions/4458">column level lineage</a>. Furthermore, dbt will always lack what <a href="https://cloud.google.com/dataform">Google’s Dataform</a> now provides: end-to-end integration with a data stack at no additional cost.</p>
+
+<p>It’s a mystery why Google hasn’t invested more in the Dataform + BigQuery experience, given the insane opportunity they have. As I’ll discuss later, many are jumping ship from Redshift. The potential for Google to roll out a “data environment in a box” is super enticing, but who know’s what’s going on in product over there? 🧐</p>
+
+<p>The dbt situation is odd. Vendors and libraries are springing up whose main purpose is to cover dbt’s shortcomings with advanced lineage, observability, and metadata capabilities (with some success), but that doesn’t really solve the problem. It’s not efficient or feasible for a practitioner to go “shopping” for every single component of a transformation framework— we need a tool that does it all (and well). While dbt will live on thanks to community adoption and support, there’s a lot of potential for improvement.</p>
+
+<p>❗️ <strong>Deploying a “production” data warehouse is unnecessarily hard and gated by tribal knowledge.</strong></p>
+
+<p>I’ve had the fortune of working with several data warehousing technologies. While developments in the past half decade have centered around abstracting DevOps (i.e. separation of storage/compute, introduction of serverless architecture, autoscaling, etc.), little has been done to simplify the process of building a functional analytics solution.</p>
+
+<p>Take, for example, creating a test/production environment. This is a relatively trivial problem that’s actually become easier in products like Snowflake with <a href="https://community.snowflake.com/s/question/0D50Z00009C3VlMSAV/zero-copy-cloning">zero-copy clones</a>, but for tools like Redshift or BigQuery, it’s necessary to architect some unnecessarily complex process— either restoring a snapshot nightly or programmatically generating SQL. The worst part: most of the clever solutions to this problem are buried in forums/Slack/etc. Once again, knowing someone who’s solved this problem <em>for your specific warehouse</em> can be a huge time saver.</p>
+
+<p>Separately, managing permissions is also a headache. This is something that could be (arguably) more baked-in to a transformation tool like dbt (I have qualms with their <a href="https://docs.getdbt.com/blog/configuring-grants">permission guidelines</a> as well, but don’t get me started). While GitLab manages an <a href="https://about.gitlab.com/handbook/business-technology/data-team/platform/permifrost/">open-source tool</a> for Snowflake permissions, I have yet to find an equivalent for Redshift and have resorted to writing Terraform, which only accomplishes about half of what I was hoping for.</p>
+
+<p>I believe this functionality should be standard in a data warehouse in 2023. Perhaps there’s opportunity for a product that can roll-out and maintain dev/stage/prod environments across vendors or make permissions management a breeze.</p>
+
+<p>❗️ <strong>Redshift is no longer a true competitor in the warehouse space.</strong></p>
+
+<p>Similar to the Google Dataform situation, this is a bit of an enigma. Having practically <strong>invented</strong> cloud storage and dominating the space on a number of fronts, Amazon has completely let Redshift go.</p>
+
+<p>Lately, almost every improvement in the product has come as a response to competitors like Snowflake and BigQuery innovating on storage, compute, and serverless. This is despite the wild competitive advantage Redshift has, given it’s closeness to S3 and the <em>potential</em> for tighter integration all of Amazon’s services. Still, we lack functionality like <em>uploading a CSV directly to a table</em> 😒 (not only is this possible in BigQuery, but Google Sheets can sync directly to the db).</p>
+
+<p>Amazon is finally rolling out features like <a href="https://aws.amazon.com/about-aws/whats-new/2022/11/amazon-redshift-supports-auto-copy-amazon-s3/">AUTO-COPY</a>, but at a snail’s pace— it’s been in preview for the past 6 months! I see tremendous opportunity for players like Amazon and Google (that have cloud services) to innovate on the data side, but it doesn’t seem to be a priority.</p>
+
+<p>Why isn’t it possible to natively couple a production database to an OLAP store and provide out-of-the-box CDC? This is more of a “data warehouse in a box” type stuff, but for 99% of companies it will save weeks/months of time (and reduce Fivetran bills).</p>
+
+<p>As data teams continue to proliferate, maybe we’ll see movement… or a disruptive competitor. In the meantime, I feel Snowflake and BigQuery are miles ahead of Redshift, which is quickly trending towards an obsolete product.</p>
+
+<p>❗️ <strong>Airflow is obsolete.</strong></p>
+
+<p>Speaking of obsolete products, I would <em>highly</em> advise against an Airflow implementation. Why? There are a number of tools (<a href="https://dagster.io/">Dagster</a>, <a href="https://www.prefect.io">Prefect</a>, <a href="https://mage.ai/">Mage</a>, to name a few) that are being built from the ground-up to address Airflow’s failures. These solutions are more nimble than Airflow and can iterate fast. One of the biggest downfalls of Airflow has been it’s success— now, the open source community has to focus on <em>maintaining</em> the product to be sure it doesn’t break existing deployments rather than innovating. The <a href="https://github.com/apache/airflow">717 open issues on github</a> (as of this writing) are a testament to this.</p>
+
+<p>If you’re looking for an orchestrator (and executor, which Airflow is not) that features a testing framework, better observability, support for dataframes as assets/objects, and tighter integration with data transformation tools, like dbt, I’d <em>highly</em> suggest one of the above products/libraries.</p>
+
+<p>❗️ <strong>Airbyte is not production-grade software.</strong></p>
+
+<p>I’m not sure if this is a hot take or just a fact. With nearly <a href="https://github.com/airbytehq/airbyte"><em>4,000</em> open issues on Github</a> as of this writing, it’s safe to say their dev team is underwater. I feel Airbyte’s marketing to be disingenuous, as it might seem a Fivetran-killer when, in fact, it breaks in most use cases (I can confirm this from personal experience).</p>
+
+<p>If I was a member of the Airbyte team, I’d be <em>very</em> concerned with Fivetran’s recent <a href="https://www.fivetran.com/blog/fivetran-free-plan">“free-tier”</a> announcement. The number of MAR they’re offering will cover most teams until they have the money to pay for a service like Fivetran, at which point Airbyte will be out of consideration.</p>
+
+<p>For modern data teams, I think the ingestion problem is pretty close to being solved, with Fivetran for well-know sources and <a href="https://meltano.com/">Meltano</a> as a framework for building Singer Spec connections to lesser-known ones. There will always be edge-cases, but this is about as close to a consensus as we’ll get for a particular part of the MDS.</p>
+
+<h2 id="final-words">Final words</h2>
+
+<p>It’s important to recognize that it’s easy to be a critic. After all, what have I built that compares to these amazing tools? Hopefully, I’ll have a different answer to that one day, but for now, I should caveat that every product I just mentioned has helped to drive a revolution in data science and analytics by making it easier to do my job.</p>
+
+<p>What I’m hoping to convey with my tacky “hot takes” is that we’re in the midst of a <em>very</em> exciting time in data and software development. Never before has the friction to building something been so low. With tools like <a href="https://modal.com/">Modal</a> and <a href="https://supabase.com/">Supabase</a>, smaller teams can build amazing products. I suspect AI will only accelerate this trend. My personal view is that we’ll see a sea of mini-development teams and lean companies pop up that can leverage these frameworks to out-compete incumbents. I guess only time will tell. 🤷‍♂️</p>]]></content><author><name>Matt Palmer</name><email>hello@mattpalmer.io</email></author><category term="data" /><summary type="html"><![CDATA[Intro]]></summary></entry><entry><title type="html">🤓 Data Council Austin - Notes &amp;amp; Takeaways</title><link href="/data/2023/04/01/data-council-austin.html" rel="alternate" type="text/html" title="🤓 Data Council Austin - Notes &amp;amp; Takeaways" /><published>2023-04-01T00:00:00+00:00</published><updated>2023-04-01T00:00:00+00:00</updated><id>/data/2023/04/01/data-council-austin</id><content type="html" xml:base="/data/2023/04/01/data-council-austin.html"><![CDATA[<center>
+<figure>
+  <img src="/assets/posts/data-council-austin/dca-logo-1.jpg" alt="Confirmed, not much bullsh*t." />
+</figure>
+</center>
+
+<h2 id="intro-and-thanks-">Intro and Thanks 🙏</h2>
+
+<p>I spent the last few days in Austin, Texas, attending the <a href="https://www.datacouncil.ai/austin">2023 Data Council Conference</a>. I’ll be here through the weekend (and I’m stoked to explore), but I wanted to drop my notes while they’re fresh.</p>
+
+<p>To start, this year’s Data Council was outstanding— the quality of the speakers and the “smallness” of the event created a forum for learning about emerging technologies <em>and</em> an opportunity to discuss data trends with some of the brightest innovators in the space. I was incredibly lucky to meet passionate, dedicated folks who helped me better understand the industry <em>and</em> provided tangible takeaways for how we approach data problems at Underline.</p>
+
+<p>I’d be remiss if I didn’t give thanks to the <em>awesome</em> practitioners at <a href="https://bytewax.io/">Bytewax</a>, <a href="https://brooklyndata.co/">Brooklyn Data</a>, <a href="https://hex.tech/">Hex</a>, <a href="https://www.group1001.com/">Group 1001</a>, <a href="https://www.datafold.com/">Datafold</a>, <a href="https://modal.com/">Modal</a>, <a href="https://www.getdbt.com/">dbt</a> and others who helped me learn and grow. I left the conference filled with optimism: about data outcomes at Underline <em>and</em> the industry as a whole.</p>
+
+<p>I was lucky to come across a few <em>excellent</em> resources for building data teams. It was refreshing to realize that others are dealing with the same challenges. Engineers have been navigating barriers in analytics/politics/business for <em>quite a while</em>. The following are some I was reminded of at DCA:</p>
+
+<ul>
+  <li>The <a href="https://about.gitlab.com/handbook/business-technology/data-team/">GitLab</a> and <a href="https://handbook.meltano.com/data-team/">Meltano</a> handbooks, developed by <a href="https://www.linkedin.com/in/tayloramurphy">Taylor Murphy</a>, are excellent resources for managing data teams. Taylor spoke to the needs of transparency in both leadership <em>and</em> code.</li>
+  <li><a href="https://datateams.amplifypartners.com/">Amplify Partners</a> has a pretty exhaustive list of resources for starting a data team. I’d highly recommend giving these a look.</li>
+</ul>
+
+<h2 id="industry-trends">Industry Trends</h2>
+
+<p>As with any conference, I think the greatest value comes from meeting passionate people and having authentic conversations. Luckily, DCA provided that <em>in addition</em> to some really great speakers/presenters. Here are the industry trends I observed from both private discussions and public presentations.</p>
+
+<h3 id="high-level">High-Level</h3>
+
+<p>📜 <strong>The <a href="https://www.activityschema.com/">Activity Schema</a> is a promising framework</strong> I’m a huge proponent of event-driven analytics. The Activity Schema is a concept introduced by <a href="https://www.narratordata.com/">Narrator</a> that drastically simplifies answering questions using SQL. It’s heavily reminiscent of an “event stream.” I’ve employed similar analytical patterns on event data in the past and I think it would be worth a POC/demo for most to see if it fits their needs. I’m <em>unsure</em> it would completely replace other data modelling approaches, but the idea of timestamp joins + event data is surprisingly simple and powerful.</p>
+
+<p>🌊 <strong>There has been a major simplification of streaming and real-time data solutions.</strong> Tools like <a href="https://bytewax.io/">bytewax</a> and <a href="https://materialize.com/">materialize</a> are redefining streaming analytics. Streaming data will soon be available to <em>every</em> team, not just those with large enterprise level resources (if they aren’t already). At <a href="https://www.underline.com/">Underline</a>, we have a few applications that will require a solution like bytewax, so I’m excited to give it a shot.</p>
+
+<p>🔭 <strong>There’s a major focus on lineage/governance/observability.</strong> I’m not sure any tool is particularly developed, so I’d wait for some maturity in the space before diving into a solution. Still, <a href="https://datahubproject.io/">datahub</a> and <a href="https://www.datafold.com/">datafold</a> are interesting and promising. Personally, I’m very excited to try out a solution using datafold data-diff. This was a HUGE pain point when I was an analyst. Starting early with an observability tool could be a game-changer and save countless hours. Plus, dbt’s catalog and lineage…. are not great. Datahub <em>could</em> be a solution, but building out a slightly more advanced lineage system is lower-priority for us, since dbt docs are “good enough” for now.</p>
+
+<p>❄️ <strong>A shift towards BigQuery/Snowflake.</strong> Almost <em>no one</em> uses Redshift (or really wants to). Snowflake/BigQuery appear to be the standard for DWH solutions. Though more expensive, Redshift users might think about Snowflake in the medium-/long-term to avoid being hamstrung by an under-served product. Though I’ve only used BigQuery and Redshift, I might seek-out a Snowflake demo. BigQuery is my current favorite. 😛</p>
+
+<p>🤖 <strong>Proliferation of AI tooling.</strong> Who doesn’t talk about AI these days? Yes, it’s very impressive. Yes, it will change the world. I think adoption of things like <a href="https://github.com/features/copilot">GitHub Copilot</a> should be done sooner rather than later. There’s also a <em>very real</em> opportunity for fast-movers to disrupt pretty much <em>every</em> industry. My question: when will I be able to reliably integrate this into my workflows to improve their process?</p>
+
+<p>🙏 <strong>Simplification of development process.</strong> We’re on the cusp of something really great here, too. Development cycles for infrastructure/data-eng are really slow. <a href="https://www.modal.com">Modal</a> and the like <em>will change that</em>. I think many common DevOps/infra headaches will be abstracted-away in the very short term. This is more of a challenge for enterprises who require more secure (VPC) solutions.</p>
+
+<p>💨 <strong>Adoption of <em>faster</em> frameworks</strong></p>
+
+<ul>
+  <li><strong><a href="https://www.rust-lang.org/">Rust</a></strong> appears to be gaining traction in the data community. These still appear <em>very</em> experimental. I did not speak to anyone using Rust in production. Nonetheless, I think playing around with something like <a href="https://www.pola.rs/">Polars</a> in Rust would be worthwhile.</li>
+  <li><strong><a href="https://arrow.apache.org/">Arrow</a></strong> defines a language-independent columnar memory format for flat and hierarchical data. Tools like pandas and others will be adopting Arrow in the near future.</li>
+  <li><strong><a href="https://duckdb.org/">Duckdb</a></strong> is SQL interface for common file storage types— think Redshift Spectrum, but more flexible. The concept is promising… could it be a OLAP killer? 🦆</li>
+</ul>
+
+<h3 id="modern-data-stack">Modern Data Stack</h3>
+
+<p><strong>dbt</strong> is still a staple in data transformation from the warehouse layer down. Though there <em>is</em> potential for disruption in the space, the ubiquity of the tool and the fact that it “just works” is good enough for now. Unfortunately, <strong>dbt-core</strong> development is still a huge pain. I spoke with several practitioners on how to better approach this problem. The following will be my approach to improving our current system:</p>
+
+<ul>
+  <li><strong>Codify permissions</strong> we need to manage permissions as code. There are tools available to do so in Snowflake, but from my research a Redshift solution will require some custom Terraform.</li>
+  <li><strong>Create a development profile</strong>: <em>only</em> one database user should be making views/tables in production. A development database should be used to sample prod data and provide a playground for development. I’ve found <a href="https://docs.getdbt.com/blog/configuring-grants">shockingly little</a> documentation on this.</li>
+  <li><strong>Develop a containerized approach to local development</strong>. It’s <em>really</em> hard to get setup in our dbt environment today. We need to turn our dbt repo into a fully-packaged environment that can be run in docker or another python framework. Even though we’re on dbt-core, we’ll need to make the tool as <em>accessible</em> as possible for our analysts.</li>
+</ul>
+
+<p><strong>Fivetran</strong> has “solved” the problem of data ingestion. It’s a ubiquitous tool that’s the industry standard. This isn’t a point of contention. Their fees are reasonable considering the time/resource savings. In 2023, <em>no one</em> should be writing custom connectors for sources that already exist. From our experience, <strong>I would strongly recommend avoiding Airbyte</strong>. We found the tool to be wholly insufficient and, quite frankly, not production-grade software. For those sources unsupported by Fivetran, <strong>Meltano</strong> can be used for custom connections— providing a framework that can build connections on the <a href="https://hub.meltano.com/singer/spec">Singer Spec</a> to create order from perhaps disorderly APIs. Best of all, it can be run in Airflow, Dagster, etc.</p>
+
+<p>Speaking of which, <strong>Dagster</strong> has taken the slow-moving nature of Airflow development and innovated to provide a <em>similar</em> tool that was re-worked from the ground up to be more suited towards modern data teams. It’s deployable via helm <em>and</em> has native support for dbt. The nature of writing DAGs/ELT jobs is more developer friendly. Compared to Airflow, I would estimate a:</p>
+
+<ul>
+  <li>Decrease in time to develop DAGs (1.25-1.5x).</li>
+  <li>Reduction in maintenance of DAGs (1.25-1.5x).</li>
+  <li>Increase in user-friendliness of the platform (ability for others to develop) (2-3x).</li>
+</ul>
+
+<p>From a time savings standpoint, I think Dagster is a no-brainer. Given the <em>extremely</em> low friction to test it out, I think everyone should at least give it a try. Plus, it seems that migration is not too bad— a colleague migrated 70+ DAGs in 4 hours. I’ve been pretty frustrated by development blockers in Airflow TaskFlow as of late. The Dagster team said I’ll <em>love</em> Dagster if I like TaskFlow. I’m excited to give it a shot.</p>
+
+<p><strong>Hex</strong> is becoming the standard for ad-hoc analysis. I’ve written about how we used <a href="https://hex.tech/blog/hex-at-alltrails/">Hex at AllTrails</a> for exploratory analysis, internal apps, and more. Combining SQL and Python, the tool makes it <em>easy and fun</em> for analysts to do their work. This is definitely the cherry on top— you need a pretty mature data stack before you can begin implementing collaborative, hosted notebook tools, but I have a <em>very strong conviction</em> that this product will continue to revolutionize exploratory data analysis.</p>
+
+<h2 id="wrap-up-">Wrap-up 🎁</h2>
+
+<p>The theme of the conference was <em>excitement</em>. While there was a declared theme of governance, observability, and metadata, I detected a buzz about something bigger.</p>
+
+<p>In tech, I think we all can feel that we’re on the cusp of something revolutionary. AI, simplified development, and abstracted resources are ultimately shortening the developer feedback loop. This has the effect of:</p>
+
+<ol>
+  <li>Making existing developers more efficient.</li>
+  <li>Reducing the number of people required to create a product.</li>
+</ol>
+
+<p>The consequences are that:</p>
+
+<ol>
+  <li>Existing companies have the opportunity to take their teams to new hights.</li>
+  <li><em>New</em> businesses, unencumbered by the tech debt that was previously necessitated by in-house tooling, will be able to move <em>fast</em>.</li>
+</ol>
+
+<p>I would be <strong>very</strong> concerned if I worked in an industry dependent on search or another problem space that AI solves well. I think we’re about to see a revolution in software development, driven by small teams and <a href="https://www.uschamber.com/co/start/startup/what-is-solopreneur">solopreneurs</a>.</p>
+
+<p>Only time will tell.</p>]]></content><author><name>Matt Palmer</name><email>hello@mattpalmer.io</email></author><category term="data" /><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">⚖️ Stress, Balance, &amp;amp; Goals</title><link href="/musings/2023/03/25/stress-balance-and-goals.html" rel="alternate" type="text/html" title="⚖️ Stress, Balance, &amp;amp; Goals" /><published>2023-03-25T00:00:00+00:00</published><updated>2023-03-25T00:00:00+00:00</updated><id>/musings/2023/03/25/stress-balance-and-goals</id><content type="html" xml:base="/musings/2023/03/25/stress-balance-and-goals.html"><![CDATA[<p>I’ve written about the importance of trajectory— it’s a foundational concept that <em>limits</em> the upper bound of achievement. If you’re headed in the wrong direction, it’s unlikely that you’ll ever arrive at your destination. This is a relatively obvious conclusion and makes the case for a good trajectory self-evident.</p>
+
+<p>More opaque are the concepts of self-compassion, balance, and stress management. Are they really necessary? Why should I be kind to myself? If I want to achieve audacious things, I need to be the best: winning at all costs, right?</p>
+
+<h2 id="self-compassion">Self-compassion</h2>
+
+<p>For the longest time, my logic went “I’m kind to other people and I hold myself to a high standard. Therefore, it’s ok to be hard on myself.” Implicitly, I was making a concession to beat myself down when I did not succeed. This is unfortunate, because I fail quite often— to achieve personal goals, to reach milestones, in my everyday efforts, etc.</p>
+
+<p>My own thought patterns were causing <em>additional</em> stress when I failed. Not from bosses, teammates, partners, but from my own head. I was opening myself up to the <a href="https://grandrapidstherapygroup.com/second-arrow-of-suffering/#:~:text=The%20parable%20of%20the%20second,arrow%20is%20even%20more%20painful.">second arrow</a>. The parable of the second arrow is a Buddhist observation on suffering. When we suffer, two arrows are sent our way. The first is the painful event itself, the second is a manifestation of our thoughts. Frequently, the first arrow <em>is not</em> the most painful— it’s how we handle it (the second) that can be deadly.</p>
+
+<p>A deeper question is “why am I upset by failure?” The answer— I want to be great. I see failure as a sign that I’m becoming the man I want to be, or maybe that I’ll never be that man at all.</p>
+
+<p>It’s so easy to get discouraged by repeated, failed efforts, but it’s essential to remember that failing is the result of pushing boundaries. Easy tasks, by definition, will have a high success rate. It’s only when we try truly hard things that we fail… and subsequently grow. Of course, this doesn’t mean attempt unreasonable things for the sake of failing, but rather that missing the mark is a part of the process.</p>
+
+<p>The more I fail and learn, the more I see that it’s a part of life. Achieving hard goals is a marathon, not a sprint. There will be many “downs”, but they make the “ups” all the more worthwhile. I’m starting to learn that <em>accepting</em> failure and moving-on is key. By dodging the second arrow, the first only slows me down a bit. Progress is then about taking failure in stride and not allowing it to derail you from your long-term goals.</p>
+
+<h2 id="balance">Balance</h2>
+
+<p>Closely linked to self-compassion is balance &amp; stress management. It’s not hard to see that getting dinged by arrows all the time can make someone pretty stressed out. Especially if 50% of those arrows are the consequence of your own thinking (in my case it’s more like 75% 😂). I’ve always felt the effects of stress, but it’s rare for me to be so glaringly aware of it.</p>
+
+<p>In the past few weeks, my mind and body quit on me. In hindsight, this was a natural consequence of my actions. Pushing myself physically, mentally, and emotionally, without a respite, for months/years on end finally took it’s toll. The funny thing? I didn’t even suffer <em>truly</em> acute stressors. I work a comfortable job with great security, I get to see my friends and family often, I had the beginnings of a good relationship, and I live in a beautiful part of the country.</p>
+
+<p>Unfortunately, I subjected myself to an inordinate amount of chronic stress. Combined with the arrows I’ve been dealing it was too much. I learned the hard way. I’ll spare the details, but it was quite scary to me. This all led to a decrease in confidence and a cycle of negative thought, further accelerating my spiral. The point? Self-compassion and stress management are inexorably linked. To be kind to yourself is to forgo stress. It’s to recognize unhelpful patterns. It’s detachment, acceptance, and contentment. These are very easy things to say and even now I don’t <em>truly</em> believe some of them, but I’m working towards a much kinder mindset.</p>
+
+<p>Staying busy is easy— it’s natural to take on more responsibilities, pursue goals, engage with hobbies, and generally fill a schedule. What’s much more difficult is the prioritization and discipline necessary to manage life and focus narrowly on what’s important. Equally important is setting aside time to focus on… nothing at all! I’ve found that having the space to think, wander, &amp; relax leads to greater creative insight. Stress management, self-compassion, and a balanced life all promote greater productivity in the long-run, which I find counterintuitive. An additional upside is that I’m much more pleasant to be around when I’m doing this well. 😅</p>
+
+<p>While it can be difficult to manage, it’s essential to put balance first— not just to serve ourselves, but so that we may serve others (the ultimate objective). I’ve stepped back from a number of my goals in the short-term to clean-up a few things that have been sitting in my head. It’s a “one step back, two steps forward” approach that can be hard to swallow for someone like me. I’m truly excited to see where this all leads &amp; I know I’ll come out on the other side of this journey a better person.</p>]]></content><author><name>Matt Palmer</name><email>hello@mattpalmer.io</email></author><category term="musings" /><summary type="html"><![CDATA[I’ve written about the importance of trajectory— it’s a foundational concept that limits the upper bound of achievement. If you’re headed in the wrong direction, it’s unlikely that you’ll ever arrive at your destination. This is a relatively obvious conclusion and makes the case for a good trajectory self-evident.]]></summary></entry><entry><title type="html">🌺 Art Page</title><link href="/update/2022/12/12/art-page.html" rel="alternate" type="text/html" title="🌺 Art Page" /><published>2022-12-12T00:00:00+00:00</published><updated>2022-12-12T00:00:00+00:00</updated><id>/update/2022/12/12/art-page</id><content type="html" xml:base="/update/2022/12/12/art-page.html"><![CDATA[<p>For the last few months, I’ve been sketching in pen &amp; ink in my free time. I’ve found it incredibly cathartic. While I have no formal education in art, it’s been fun to experiment and improve my drawings.</p>
+
+<p>I’ve created a new <a href="/art">art</a> page where I’ll display my new sketches. I’m working to get a site stood up where I can create and sell prints. My goal is to share my hobby with those who are interested. I’ve found that to be a great motivator for progress.</p>
+
+<p>In the future, I hope to attend art shows and informal craft fairs to sell prints, engage in the community, and learn more about what it means to create beauty. I’m stoked to start this new journey! 🙂</p>]]></content><author><name>Matt Palmer</name><email>hello@mattpalmer.io</email></author><category term="update" /><summary type="html"><![CDATA[For the last few months, I’ve been sketching in pen &amp; ink in my free time. I’ve found it incredibly cathartic. While I have no formal education in art, it’s been fun to experiment and improve my drawings.]]></summary></entry><entry><title type="html">💭 Big Ideas</title><link href="/musings/2022/06/12/big-ideas.html" rel="alternate" type="text/html" title="💭 Big Ideas" /><published>2022-06-12T00:00:00+00:00</published><updated>2022-06-12T00:00:00+00:00</updated><id>/musings/2022/06/12/big-ideas</id><content type="html" xml:base="/musings/2022/06/12/big-ideas.html"><![CDATA[<p>Every now &amp; then, I’m obsessed by a Big Idea. It plants itself in my mind and I think about it day and night. I have a purpose.</p>
+
+<p>I wake up early to develop it. I stay up late to improve it. I know the Idea will be great. I know it will solve a problem. It will make lives easier! Is it a product? Can I sell it? Will this be the next Stripe, Spotify, Strava?</p>
+
+<p>A few weeks of work and I share my idea. There is praise. There are congratulations. It is put to use! People benefit. I am happy.</p>
+
+<p>Slowly, we forget. The Idea is used less. Time passes: the problem is no longer relevant, a better solution is found, interest is lost. I am no different from those without Ideas.</p>
+
+<p>I move onward, looking for the Next Big Idea.</p>]]></content><author><name>Matt Palmer</name><email>hello@mattpalmer.io</email></author><category term="musings" /><summary type="html"><![CDATA[Every now &amp; then, I’m obsessed by a Big Idea. It plants itself in my mind and I think about it day and night. I have a purpose.]]></summary></entry><entry><title type="html">🏹 On Trajectories…</title><link href="/blog/2022/02/15/on-trajectories.html" rel="alternate" type="text/html" title="🏹 On Trajectories…" /><published>2022-02-15T00:00:00+00:00</published><updated>2022-02-15T00:00:00+00:00</updated><id>/blog/2022/02/15/on-trajectories</id><content type="html" xml:base="/blog/2022/02/15/on-trajectories.html"><![CDATA[<p>I frequently find myself worrying about the future. Will succeed and achieve my goals? What is success? Do I have the right goals? I’ve done this since I was a kid, but the outcome is usually the same: I’ll get an idea in my head and work as hard as I can to make it happen. It’s only in recent years that I’ve started to reconsider this approach.</p>
+
+<p>I wouldn’t say the outcomes are bad: throughout my life, through some combination of skill, hard work, and luck (a very, very large quantity of the latter), I’ve been able to achieve most things I set my mind to. I didn’t end up where I planned, but at no point did I have a particular place I wanted to go. Instead, I set short-term goals and wore myself out trying to achieve them. Often, my mindset was, “I need to work harder than anyone else to achieve what I’d like.” Thankfully, my short-term objectives laddered up to some nice long-term outcomes, but this was no means by design.</p>
+
+<p>In fact, I often avoided thinking about the future or past altogether. Everyone says “live in the present,” right?</p>
+
+<p>I think there are some long-standing personal beliefs behind my behavior:</p>
+
+<ol>
+  <li>I am not like everyone else therefore I need to do things differently.</li>
+  <li>To prove I’m not mediocre, I need to work as hard as possible.</li>
+  <li>The things I want to accomplish necessitate constant maximal effort.</li>
+  <li>To avoid the thoughts in my head, I will keep myself busy.</li>
+</ol>
+
+<p>Upon reflection, I can see flaws in each of these:</p>
+
+<ol>
+  <li>What other people are doing is irrelevant, the only thing important is the truth.</li>
+  <li>Perhaps, but hard work is only effective when applied intelligently.</li>
+  <li><em>Most things</em> can be accomplished through planning and small actions taken daily. “Constant maximal” is a paradox as far as human beings go.</li>
+  <li>Avoiding the uncomfortable is usually a bad strategy, this is no exception.</li>
+</ol>
+
+<p>A resounding lesson from the past two years has been that trajectory is foundational to reaching a goal. It’s not <em>more important</em> than hard work— one steel beam on the Eiffel Tower isn’t more important than another, yet those at the top wouldn’t exist without their precursors.</p>
+
+<p>Like layers of steel on a great tower, trajectory lays the foundation for hard work. Together, the outcome is beautiful.</p>
+
+<p>It’s human to focus on the day-to-day, to live in the moment. Yet, even for the well intentioned, this can lead to a myopic focus. Without time to step back and reflect, taking life day-by-day won’t affect long-term change (for most). Our lives are comprised of years &amp; decades, and <em>true</em> foundational change occurs on those timescales.</p>
+
+<p>The only way to affect change is to consistently move in the right direction. Consider two busses going from New York to Los Angeles. One bus can go 50% faster than the other— which will arrive first?</p>
+
+<p>It might seem like a trivial, but speed and execution are two very different things. More important than the bus is the <em>bus driver</em>. If bus #1 takes off in a rush and ends up in Miami, its speed is irrelevant. Ordinary execution from bus #2 will be superior.</p>
+
+<p>The analogy has obvious carryover to personal goals, with a few caveats: none of us know our (final) destination and we’re not racing against anyone. What we <em>can</em> do is set interim personal goals that take us a step closer to <em>who we want to be</em> at the end of the day. Of course, that requires us to know who we want to be. 😉</p>
+
+<p>The traits that result in us meeting our destination in as efficient a manner as possible are:</p>
+
+<ol>
+  <li>Figuring out where we want to go.</li>
+  <li>Charting out a plan to get there, which might take a <em>very</em> long time.</li>
+  <li>Adjusting for challenges en-route.</li>
+  <li><em>Pacing</em>— Being consistent, showing up <em>every day</em>.</li>
+  <li>Getting help where necessary, <strong>especially if it’s on direction</strong>.</li>
+</ol>
+
+<p>Hence, I’m now inclined to believe that it’s the path we take to reach our goals that has the greatest importance. Without a solid <em>trajectory</em> or any <em>consistency</em>, hard work is misguided, ineffective, and unproductive.</p>
+
+<p>Furthermore, a singular focus on work can distract us from outcomes. What’s worse than working towards a goal you don’t care about?</p>
+
+<p>How often do we ask “If I continue on this path, where will I be in a year, five, ten?” This is difficult since it requires introspection and <em>truth</em>. Do I really want to confront my fears, sorrows, regrets? Do I want to acknowledge the facts of my life and the consequences of my decisions?</p>
+
+<p>My childhood (and adult) fears center around uncertainty. Uncertainty cannot be eliminated, but it may be mitigated by doing the right thing. Perceived progress is reassuring. It makes us feel like we’re moving towards <em>something</em>. The solution to fears of uncertainty, therefore, is to first think and resolve, then take steps towards those resolutions.</p>
+
+<p>I’ve spent so much time avoiding the truth and the facts of reality. By confronting them and recognizing <em>what I want</em>, I can remove a huge barrier to my goals. Setting small milestones allows me to have some <strong>sense of direction</strong> for where I’m headed and, hopefully, takes me somewhere I’m proud to be. There is no finish line, no leader board for success. The ambiguity only adds difficulty.</p>
+
+<p>Hard work is inefficient with out a trajectory. A trajectory can be misguided without the truth. An accurate perception of reality is necessary to tell ourselves the truth. The ability see things for what they are is the most valuable skill out there.</p>]]></content><author><name>Matt Palmer</name><email>hello@mattpalmer.io</email></author><category term="blog" /><summary type="html"><![CDATA[I frequently find myself worrying about the future. Will succeed and achieve my goals? What is success? Do I have the right goals? I’ve done this since I was a kid, but the outcome is usually the same: I’ll get an idea in my head and work as hard as I can to make it happen. It’s only in recent years that I’ve started to reconsider this approach.]]></summary></entry><entry><title type="html">🪞 2021 Reflections</title><link href="/blog/2021/12/31/reflections-2021.html" rel="alternate" type="text/html" title="🪞 2021 Reflections" /><published>2021-12-31T00:00:00+00:00</published><updated>2021-12-31T00:00:00+00:00</updated><id>/blog/2021/12/31/reflections-2021</id><content type="html" xml:base="/blog/2021/12/31/reflections-2021.html"><![CDATA[<h2 id="the-past-year">The past year</h2>
+
+<p>For most, the past two years have been strange. I think we’ve all encountered unexpected challenges: personal, professional, &amp; social.</p>
+
+<p>Global events have brought about shifts in how we work and communicate. For many, this has resulted in more time alone with our thoughts. This is not an easy thing to face. Many, myself included, thought 2021 might be a return to normalcy. This was far from the truth.</p>
+
+<p>A first reaction to this new reality was to drown out my own thoughts: keep myself distracted with external stimuli, whether good (hiking, biking, exercising) or bad (Netflix, social media).</p>
+
+<p>I’ve found this to be wholly unsatisfying. The concept of avoiding the truth frightens me. I think this year was a chance to rediscover who I am. Confronting my feelings and resolving that uneasiness has been a long and painful journey, one that is not finished.</p>
+
+<p>It was not comfortable or easy, but I’d like to take some time to reflect on that.</p>
+
+<h2 id="2021-goals--reflections">2021 Goals &amp; Reflections</h2>
+
+<p>I set the following goals on December 31st, 2020:</p>
+
+<ul class="task-list">
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Form a better relationship with my family.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Become a core employee at my previous workplace, break into data engineering.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Become more lean &amp; improve my relationship with food.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Get stronger, faster.
+    <ul class="task-list">
+      <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Row a 2k sub 7:00.</li>
+      <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Sub 5:00 mile time.</li>
+      <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />C&amp;J 150kg, SN 115kg.</li>
+    </ul>
+  </li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Establish an inner circle
+    <ul class="task-list">
+      <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Make 1-3 really good friends I can rely on.</li>
+      <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Meet a girl (or two).</li>
+      <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Be someone dependable.</li>
+    </ul>
+  </li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Learn about successful people, always be the first to try something new, grow personally.
+    <ul class="task-list">
+      <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Read 24 books</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="reflections">Reflections</h3>
+
+<p>Some of my goals were extremely broad and unquantifiable. Some were too optimistic. Some became irrelevant halfway through the year.</p>
+
+<p>While I’m frustrated at my failure to accomplish these goals (and set reasonable expectations for myself), I’m taking these lessons into this year. Before I discuss 2022 goals, here are my thoughts on 2021:</p>
+
+<ul>
+  <li>I’m extremely proud of the work I did building relationships with great people in 2021. I met some truly amazing people and changed the way I think about friendship.</li>
+  <li>I learned <em>a ton</em> about analytics engineering through my old employer (Storyblocks) and continue to learn daily.</li>
+  <li>I started a new job at an amazing SaaS company (AllTrails). I improved the quality of my analyses and shifted into product rather than data engineering.</li>
+  <li>I moved cross-country to Salt Lake City. I tried new experiences, met new people, and challenged myself to try different things.</li>
+  <li>I nearly accomplished my strength goals (140 CJ &amp; 110 SN). I believe that I might have been closer had I not moved in October.</li>
+  <li>I read <a href="https://www.goodreads.com/user_challenges/26952525">25 books</a> and learned a ton.</li>
+</ul>
+
+<h3 id="what-worked">What worked</h3>
+
+<ul>
+  <li>Honing in on extremely specific goals.</li>
+  <li>Removing conflicting objectives and keeping my methods simple.</li>
+  <li>Doing less.</li>
+  <li>Making steady progress through consistent execution.</li>
+  <li>Investing in activities that make me happy &amp; keep me going.</li>
+  <li>Spending time reflecting on my feelings.</li>
+  <li>Prioritizing relationships with good people.</li>
+</ul>
+
+<h3 id="what-didnt-work">What didn’t work</h3>
+
+<ul>
+  <li>Setting vague and/or immeasurable goals.</li>
+  <li>Burning the candle at both ends day over day.</li>
+  <li>Putting myself in situations devoid of spontaneity.</li>
+  <li>Living in a city where there were few people my age.</li>
+  <li>Continually trying to fit in with the wrong crowd.</li>
+</ul>
+
+<h3 id="lessons-learned">Lessons learned</h3>
+
+<p>Going forward, I will be making my own decisions. I will prioritize those things that bring me joy and emphasize relationships. <em>Rome was not built in a day</em>.  Consistency and balance take priority over long hours and moving to stay busy.</p>
+
+<p>I truly want to make a difference in this world, but I realize that takes time. It’s OK if I don’t have a plan to bring that goal into reality right now. I will continue working to find my niche and understand how I can best create value. I will continue to show up and give my best everyday.</p>
+
+<p>I will continue to be grateful for this amazing life.</p>
+
+<p><br /></p>
+<center>
+
+
+
+<div class="carousel__holder">
+    <div id="carousel0" class="carousel">
+        
+          <input class="carousel__activator" type="radio" name="carousel0" id="0a" checked="checked" />
+        
+          <input class="carousel__activator" type="radio" name="carousel0" id="0b" />
+        
+          <input class="carousel__activator" type="radio" name="carousel0" id="0c" />
+        
+          <input class="carousel__activator" type="radio" name="carousel0" id="0d" />
+        
+          <input class="carousel__activator" type="radio" name="carousel0" id="0e" />
+        
+          <input class="carousel__activator" type="radio" name="carousel0" id="0f" />
+        
+          <input class="carousel__activator" type="radio" name="carousel0" id="0g" />
+        
+          <input class="carousel__activator" type="radio" name="carousel0" id="0h" />
+        
+          <input class="carousel__activator" type="radio" name="carousel0" id="0i" />
+        
+          <input class="carousel__activator" type="radio" name="carousel0" id="0j" />
+        
+          <input class="carousel__activator" type="radio" name="carousel0" id="0k" />
+        
+          <input class="carousel__activator" type="radio" name="carousel0" id="0l" />
+        
+          <input class="carousel__activator" type="radio" name="carousel0" id="0m" />
+        
+          <input class="carousel__activator" type="radio" name="carousel0" id="0n" />
+        
+        
+          
+          
+          
+          
+          <div class="carousel__controls">
+              <label class="carousel__control carousel__control--backward" for="0n"></label>
+              <label class="carousel__control carousel__control--forward" for="0b"></label>
+          </div>
+        
+          
+          
+          
+          
+          <div class="carousel__controls">
+              <label class="carousel__control carousel__control--backward" for="0a"></label>
+              <label class="carousel__control carousel__control--forward" for="0c"></label>
+          </div>
+        
+          
+          
+          
+          
+          <div class="carousel__controls">
+              <label class="carousel__control carousel__control--backward" for="0b"></label>
+              <label class="carousel__control carousel__control--forward" for="0d"></label>
+          </div>
+        
+          
+          
+          
+          
+          <div class="carousel__controls">
+              <label class="carousel__control carousel__control--backward" for="0c"></label>
+              <label class="carousel__control carousel__control--forward" for="0e"></label>
+          </div>
+        
+          
+          
+          
+          
+          <div class="carousel__controls">
+              <label class="carousel__control carousel__control--backward" for="0d"></label>
+              <label class="carousel__control carousel__control--forward" for="0f"></label>
+          </div>
+        
+          
+          
+          
+          
+          <div class="carousel__controls">
+              <label class="carousel__control carousel__control--backward" for="0e"></label>
+              <label class="carousel__control carousel__control--forward" for="0g"></label>
+          </div>
+        
+          
+          
+          
+          
+          <div class="carousel__controls">
+              <label class="carousel__control carousel__control--backward" for="0f"></label>
+              <label class="carousel__control carousel__control--forward" for="0h"></label>
+          </div>
+        
+          
+          
+          
+          
+          <div class="carousel__controls">
+              <label class="carousel__control carousel__control--backward" for="0g"></label>
+              <label class="carousel__control carousel__control--forward" for="0i"></label>
+          </div>
+        
+          
+          
+          
+          
+          <div class="carousel__controls">
+              <label class="carousel__control carousel__control--backward" for="0h"></label>
+              <label class="carousel__control carousel__control--forward" for="0j"></label>
+          </div>
+        
+          
+          
+          
+          
+          <div class="carousel__controls">
+              <label class="carousel__control carousel__control--backward" for="0i"></label>
+              <label class="carousel__control carousel__control--forward" for="0k"></label>
+          </div>
+        
+          
+          
+          
+          
+          <div class="carousel__controls">
+              <label class="carousel__control carousel__control--backward" for="0j"></label>
+              <label class="carousel__control carousel__control--forward" for="0l"></label>
+          </div>
+        
+          
+          
+          
+          
+          <div class="carousel__controls">
+              <label class="carousel__control carousel__control--backward" for="0k"></label>
+              <label class="carousel__control carousel__control--forward" for="0m"></label>
+          </div>
+        
+          
+          
+          
+          
+          <div class="carousel__controls">
+              <label class="carousel__control carousel__control--backward" for="0l"></label>
+              <label class="carousel__control carousel__control--forward" for="0n"></label>
+          </div>
+        
+          
+          
+          
+          
+          <div class="carousel__controls">
+              <label class="carousel__control carousel__control--backward" for="0m"></label>
+              <label class="carousel__control carousel__control--forward" for="0a"></label>
+          </div>
+        
+        <div class="carousel__track">
+          <ul>
+            
+            <li class="carousel__slide" style="background-image: url('/assets/posts/2021_reflections/img_00001.jpeg');"></li>
+            
+            <li class="carousel__slide" style="background-image: url('/assets/posts/2021_reflections/img_00004.jpeg');"></li>
+            
+            <li class="carousel__slide" style="background-image: url('/assets/posts/2021_reflections/img_00006.jpeg');"></li>
+            
+            <li class="carousel__slide" style="background-image: url('/assets/posts/2021_reflections/img_00007.jpeg');"></li>
+            
+            <li class="carousel__slide" style="background-image: url('/assets/posts/2021_reflections/img_00008.jpeg');"></li>
+            
+            <li class="carousel__slide" style="background-image: url('/assets/posts/2021_reflections/img_00009.jpeg');"></li>
+            
+            <li class="carousel__slide" style="background-image: url('/assets/posts/2021_reflections/img_00010.jpeg');"></li>
+            
+            <li class="carousel__slide" style="background-image: url('/assets/posts/2021_reflections/img_00011.jpeg');"></li>
+            
+            <li class="carousel__slide" style="background-image: url('/assets/posts/2021_reflections/img_00012.jpeg');"></li>
+            
+            <li class="carousel__slide" style="background-image: url('/assets/posts/2021_reflections/img_00013.jpeg');"></li>
+            
+            <li class="carousel__slide" style="background-image: url('/assets/posts/2021_reflections/img_00014.jpeg');"></li>
+            
+            <li class="carousel__slide" style="background-image: url('/assets/posts/2021_reflections/img_00015.jpeg');"></li>
+            
+            <li class="carousel__slide" style="background-image: url('/assets/posts/2021_reflections/img_00016.jpeg');"></li>
+            
+            <li class="carousel__slide" style="background-image: url('/assets/posts/2021_reflections/img_00017.jpeg');"></li>
+            
+          </ul>
+        </div>
+        <div class="carousel__indicators">
+            
+              <label class="carousel__indicator" for="0a"></label>
+            
+              <label class="carousel__indicator" for="0b"></label>
+            
+              <label class="carousel__indicator" for="0c"></label>
+            
+              <label class="carousel__indicator" for="0d"></label>
+            
+              <label class="carousel__indicator" for="0e"></label>
+            
+              <label class="carousel__indicator" for="0f"></label>
+            
+              <label class="carousel__indicator" for="0g"></label>
+            
+              <label class="carousel__indicator" for="0h"></label>
+            
+              <label class="carousel__indicator" for="0i"></label>
+            
+              <label class="carousel__indicator" for="0j"></label>
+            
+              <label class="carousel__indicator" for="0k"></label>
+            
+              <label class="carousel__indicator" for="0l"></label>
+            
+              <label class="carousel__indicator" for="0m"></label>
+            
+              <label class="carousel__indicator" for="0n"></label>
+            
+        </div>
+    </div>
+</div>
+
+<style>
+.carousel__holder {width: 100%; position: relative; padding-bottom: 75%; margin: 1rem 0 1rem;}
+.carousel {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  text-align: center;
+  position: absolute;
+  padding: 0;
+}
+.carousel__controls,
+.carousel__activator {
+  display: none;
+}
+
+.carousel__activator:nth-of-type(1):checked ~ .carousel__track {
+  -webkit-transform: translateX(-000%);
+          transform: translateX(-000%);
+}
+.carousel__activator:nth-of-type(1):checked ~ .carousel__slide:nth-of-type(1) {
+  transition: opacity 0.5s, -webkit-transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s, -webkit-transform 0.5s;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  -webkit-transform: scale(1);
+          transform: scale(1);
+}
+.carousel__activator:nth-of-type(1):checked ~ .carousel__controls:nth-of-type(1) {
+  display: block;
+  opacity: 1;
+}
+.carousel__activator:nth-of-type(1):checked ~ .carousel__indicators .carousel__indicator:nth-of-type(1) {
+  opacity: 1;
+}
+
+.carousel__activator:nth-of-type(2):checked ~ .carousel__track {
+  -webkit-transform: translateX(-100%);
+          transform: translateX(-100%);
+}
+.carousel__activator:nth-of-type(2):checked ~ .carousel__slide:nth-of-type(2) {
+  transition: opacity 0.5s, -webkit-transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s, -webkit-transform 0.5s;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  -webkit-transform: scale(1);
+          transform: scale(1);
+}
+.carousel__activator:nth-of-type(2):checked ~ .carousel__controls:nth-of-type(2) {
+  display: block;
+  opacity: 1;
+}
+.carousel__activator:nth-of-type(2):checked ~ .carousel__indicators .carousel__indicator:nth-of-type(2) {
+  opacity: 1;
+}
+
+.carousel__activator:nth-of-type(3):checked ~ .carousel__track {
+  -webkit-transform: translateX(-200%);
+          transform: translateX(-200%);
+}
+.carousel__activator:nth-of-type(3):checked ~ .carousel__slide:nth-of-type(3) {
+  transition: opacity 0.5s, -webkit-transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s, -webkit-transform 0.5s;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  -webkit-transform: scale(1);
+          transform: scale(1);
+}
+.carousel__activator:nth-of-type(3):checked ~ .carousel__controls:nth-of-type(3) {
+  display: block;
+  opacity: 1;
+}
+.carousel__activator:nth-of-type(3):checked ~ .carousel__indicators .carousel__indicator:nth-of-type(3) {
+  opacity: 1;
+}
+
+.carousel__activator:nth-of-type(4):checked ~ .carousel__track {
+  -webkit-transform: translateX(-300%);
+          transform: translateX(-300%);
+}
+.carousel__activator:nth-of-type(4):checked ~ .carousel__slide:nth-of-type(4) {
+  transition: opacity 0.5s, -webkit-transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s, -webkit-transform 0.5s;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  -webkit-transform: scale(1);
+          transform: scale(1);
+}
+.carousel__activator:nth-of-type(4):checked ~ .carousel__controls:nth-of-type(4) {
+  display: block;
+  opacity: 1;
+}
+.carousel__activator:nth-of-type(4):checked ~ .carousel__indicators .carousel__indicator:nth-of-type(4) {
+  opacity: 1;
+}
+
+.carousel__activator:nth-of-type(5):checked ~ .carousel__track {
+  -webkit-transform: translateX(-400%);
+          transform: translateX(-400%);
+}
+.carousel__activator:nth-of-type(5):checked ~ .carousel__slide:nth-of-type(5) {
+  transition: opacity 0.5s, -webkit-transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s, -webkit-transform 0.5s;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  -webkit-transform: scale(1);
+          transform: scale(1);
+}
+.carousel__activator:nth-of-type(5):checked ~ .carousel__controls:nth-of-type(5) {
+  display: block;
+  opacity: 1;
+}
+.carousel__activator:nth-of-type(5):checked ~ .carousel__indicators .carousel__indicator:nth-of-type(5) {
+  opacity: 1;
+}
+
+.carousel__activator:nth-of-type(6):checked ~ .carousel__track {
+  -webkit-transform: translateX(-500%);
+          transform: translateX(-500%);
+}
+.carousel__activator:nth-of-type(6):checked ~ .carousel__slide:nth-of-type(6) {
+  transition: opacity 0.5s, -webkit-transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s, -webkit-transform 0.5s;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  -webkit-transform: scale(1);
+          transform: scale(1);
+}
+.carousel__activator:nth-of-type(6):checked ~ .carousel__controls:nth-of-type(6) {
+  display: block;
+  opacity: 1;
+}
+.carousel__activator:nth-of-type(6):checked ~ .carousel__indicators .carousel__indicator:nth-of-type(6) {
+  opacity: 1;
+}
+
+.carousel__activator:nth-of-type(7):checked ~ .carousel__track {
+  -webkit-transform: translateX(-600%);
+          transform: translateX(-600%);
+}
+.carousel__activator:nth-of-type(7):checked ~ .carousel__slide:nth-of-type(7) {
+  transition: opacity 0.5s, -webkit-transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s, -webkit-transform 0.5s;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  -webkit-transform: scale(1);
+          transform: scale(1);
+}
+.carousel__activator:nth-of-type(7):checked ~ .carousel__controls:nth-of-type(7) {
+  display: block;
+  opacity: 1;
+}
+.carousel__activator:nth-of-type(7):checked ~ .carousel__indicators .carousel__indicator:nth-of-type(7) {
+  opacity: 1;
+}
+
+.carousel__activator:nth-of-type(8):checked ~ .carousel__track {
+  -webkit-transform: translateX(-700%);
+          transform: translateX(-700%);
+}
+.carousel__activator:nth-of-type(8):checked ~ .carousel__slide:nth-of-type(8) {
+  transition: opacity 0.5s, -webkit-transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s, -webkit-transform 0.5s;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  -webkit-transform: scale(1);
+          transform: scale(1);
+}
+.carousel__activator:nth-of-type(8):checked ~ .carousel__controls:nth-of-type(8) {
+  display: block;
+  opacity: 1;
+}
+.carousel__activator:nth-of-type(8):checked ~ .carousel__indicators .carousel__indicator:nth-of-type(8) {
+  opacity: 1;
+}
+
+.carousel__activator:nth-of-type(9):checked ~ .carousel__track {
+  -webkit-transform: translateX(-800%);
+          transform: translateX(-800%);
+}
+.carousel__activator:nth-of-type(9):checked ~ .carousel__slide:nth-of-type(9) {
+  transition: opacity 0.5s, -webkit-transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s, -webkit-transform 0.5s;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  -webkit-transform: scale(1);
+          transform: scale(1);
+}
+.carousel__activator:nth-of-type(9):checked ~ .carousel__controls:nth-of-type(9) {
+  display: block;
+  opacity: 1;
+}
+.carousel__activator:nth-of-type(9):checked ~ .carousel__indicators .carousel__indicator:nth-of-type(9) {
+  opacity: 1;
+}
+
+.carousel__activator:nth-of-type(10):checked ~ .carousel__track {
+  -webkit-transform: translateX(-900%);
+          transform: translateX(-900%);
+}
+.carousel__activator:nth-of-type(10):checked ~ .carousel__slide:nth-of-type(10) {
+  transition: opacity 0.5s, -webkit-transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s, -webkit-transform 0.5s;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  -webkit-transform: scale(1);
+          transform: scale(1);
+}
+.carousel__activator:nth-of-type(10):checked ~ .carousel__controls:nth-of-type(10) {
+  display: block;
+  opacity: 1;
+}
+.carousel__activator:nth-of-type(10):checked ~ .carousel__indicators .carousel__indicator:nth-of-type(10) {
+  opacity: 1;
+}
+
+.carousel__activator:nth-of-type(11):checked ~ .carousel__track {
+  -webkit-transform: translateX(-1000%);
+          transform: translateX(-1000%);
+}
+.carousel__activator:nth-of-type(11):checked ~ .carousel__slide:nth-of-type(11) {
+  transition: opacity 0.5s, -webkit-transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s, -webkit-transform 0.5s;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  -webkit-transform: scale(1);
+          transform: scale(1);
+}
+.carousel__activator:nth-of-type(11):checked ~ .carousel__controls:nth-of-type(11) {
+  display: block;
+  opacity: 1;
+}
+.carousel__activator:nth-of-type(11):checked ~ .carousel__indicators .carousel__indicator:nth-of-type(11) {
+  opacity: 1;
+}
+
+.carousel__activator:nth-of-type(12):checked ~ .carousel__track {
+  -webkit-transform: translateX(-1100%);
+          transform: translateX(-1100%);
+}
+.carousel__activator:nth-of-type(12):checked ~ .carousel__slide:nth-of-type(12) {
+  transition: opacity 0.5s, -webkit-transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s, -webkit-transform 0.5s;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  -webkit-transform: scale(1);
+          transform: scale(1);
+}
+.carousel__activator:nth-of-type(12):checked ~ .carousel__controls:nth-of-type(12) {
+  display: block;
+  opacity: 1;
+}
+.carousel__activator:nth-of-type(12):checked ~ .carousel__indicators .carousel__indicator:nth-of-type(12) {
+  opacity: 1;
+}
+
+.carousel__activator:nth-of-type(13):checked ~ .carousel__track {
+  -webkit-transform: translateX(-1200%);
+          transform: translateX(-1200%);
+}
+.carousel__activator:nth-of-type(13):checked ~ .carousel__slide:nth-of-type(13) {
+  transition: opacity 0.5s, -webkit-transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s, -webkit-transform 0.5s;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  -webkit-transform: scale(1);
+          transform: scale(1);
+}
+.carousel__activator:nth-of-type(13):checked ~ .carousel__controls:nth-of-type(13) {
+  display: block;
+  opacity: 1;
+}
+.carousel__activator:nth-of-type(13):checked ~ .carousel__indicators .carousel__indicator:nth-of-type(13) {
+  opacity: 1;
+}
+
+.carousel__activator:nth-of-type(14):checked ~ .carousel__track {
+  -webkit-transform: translateX(-1300%);
+          transform: translateX(-1300%);
+}
+.carousel__activator:nth-of-type(14):checked ~ .carousel__slide:nth-of-type(14) {
+  transition: opacity 0.5s, -webkit-transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s;
+  transition: opacity 0.5s, transform 0.5s, -webkit-transform 0.5s;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  -webkit-transform: scale(1);
+          transform: scale(1);
+}
+.carousel__activator:nth-of-type(14):checked ~ .carousel__controls:nth-of-type(14) {
+  display: block;
+  opacity: 1;
+}
+.carousel__activator:nth-of-type(14):checked ~ .carousel__indicators .carousel__indicator:nth-of-type(14) {
+  opacity: 1;
+}
+
+
+.carousel__control {
+  height: 30px;
+  width: 30px;
+  margin-top: -15px;
+  top: 50%;
+  position: absolute;
+  display: block;
+  cursor: pointer;
+  border-width: 5px 5px 0 0;
+  border-style: solid;
+  border-color: #fafafa;
+  opacity: 0.35;
+  opacity: 1;
+  outline: 0;
+  z-index: 3;
+}
+.carousel__control:hover {
+  opacity: 1;
+}
+.carousel__control--backward {
+  left: 20px;
+  -webkit-transform: rotate(-135deg);
+          transform: rotate(-135deg);
+}
+.carousel__control--forward {
+  right: 20px;
+  -webkit-transform: rotate(45deg);
+          transform: rotate(45deg);
+}
+.carousel__indicators {
+  position: absolute;
+  bottom: 20px;
+  width: 100%;
+  text-align: center;
+}
+.carousel__indicator {
+  height: 15px;
+  width: 15px;
+  border-radius: 100%;
+  display: inline-block;
+  z-index: 2;
+  cursor: pointer;
+  opacity: 0.35;
+  margin: 0 2.5px 0 2.5px;
+}
+.carousel__indicator:hover {
+  opacity: 0.75;
+}
+.carousel__track {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 0;
+  margin: 0;
+  transition: -webkit-transform 0.5s ease 0s;
+  transition: transform 0.5s ease 0s;
+  transition: transform 0.5s ease 0s, -webkit-transform 0.5s ease 0s;
+}
+.carousel__track .carousel__slide {
+  display: block;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+}
+
+.carousel__track .carousel__slide:nth-of-type(1) {
+  -webkit-transform: translateX(000%);
+          transform: translateX(000%);
+}
+
+.carousel__track .carousel__slide:nth-of-type(2) {
+  -webkit-transform: translateX(100%);
+          transform: translateX(100%);
+}
+
+.carousel__track .carousel__slide:nth-of-type(3) {
+  -webkit-transform: translateX(200%);
+          transform: translateX(200%);
+}
+
+.carousel__track .carousel__slide:nth-of-type(4) {
+  -webkit-transform: translateX(300%);
+          transform: translateX(300%);
+}
+
+.carousel__track .carousel__slide:nth-of-type(5) {
+  -webkit-transform: translateX(400%);
+          transform: translateX(400%);
+}
+
+.carousel__track .carousel__slide:nth-of-type(6) {
+  -webkit-transform: translateX(500%);
+          transform: translateX(500%);
+}
+
+.carousel__track .carousel__slide:nth-of-type(7) {
+  -webkit-transform: translateX(600%);
+          transform: translateX(600%);
+}
+
+.carousel__track .carousel__slide:nth-of-type(8) {
+  -webkit-transform: translateX(700%);
+          transform: translateX(700%);
+}
+
+.carousel__track .carousel__slide:nth-of-type(9) {
+  -webkit-transform: translateX(800%);
+          transform: translateX(800%);
+}
+
+.carousel__track .carousel__slide:nth-of-type(10) {
+  -webkit-transform: translateX(900%);
+          transform: translateX(900%);
+}
+
+.carousel__track .carousel__slide:nth-of-type(11) {
+  -webkit-transform: translateX(1000%);
+          transform: translateX(1000%);
+}
+
+.carousel__track .carousel__slide:nth-of-type(12) {
+  -webkit-transform: translateX(1100%);
+          transform: translateX(1100%);
+}
+
+.carousel__track .carousel__slide:nth-of-type(13) {
+  -webkit-transform: translateX(1200%);
+          transform: translateX(1200%);
+}
+
+.carousel__track .carousel__slide:nth-of-type(14) {
+  -webkit-transform: translateX(1300%);
+          transform: translateX(1300%);
+}
+
+
+.carousel--scale .carousel__slide {
+  -webkit-transform: scale(0);
+          transform: scale(0);
+}
+.carousel__slide {
+  height: 100%;
+  position: absolute;
+  opacity: 0;
+  overflow: hidden;
+}
+.carousel__slide .overlay {height: 100%;}
+.carousel--thumb .carousel__indicator {
+  height: 30px;
+  width: 30px;
+}
+.carousel__indicator {
+  background-color: #fafafa;
+}
+
+.carousel__slide:nth-of-type(1),
+.carousel--thumb .carousel__indicators .carousel__indicator:nth-of-type(1) {
+  background-size: cover;
+  background-position: center;
+}
+
+.carousel__slide:nth-of-type(2),
+.carousel--thumb .carousel__indicators .carousel__indicator:nth-of-type(2) {
+  background-size: cover;
+  background-position: center;
+}
+
+.carousel__slide:nth-of-type(3),
+.carousel--thumb .carousel__indicators .carousel__indicator:nth-of-type(3) {
+  background-size: cover;
+  background-position: center;
+}
+
+.carousel__slide:nth-of-type(4),
+.carousel--thumb .carousel__indicators .carousel__indicator:nth-of-type(4) {
+  background-size: cover;
+  background-position: center;
+}
+
+.carousel__slide:nth-of-type(5),
+.carousel--thumb .carousel__indicators .carousel__indicator:nth-of-type(5) {
+  background-size: cover;
+  background-position: center;
+}
+
+.carousel__slide:nth-of-type(6),
+.carousel--thumb .carousel__indicators .carousel__indicator:nth-of-type(6) {
+  background-size: cover;
+  background-position: center;
+}
+
+.carousel__slide:nth-of-type(7),
+.carousel--thumb .carousel__indicators .carousel__indicator:nth-of-type(7) {
+  background-size: cover;
+  background-position: center;
+}
+
+.carousel__slide:nth-of-type(8),
+.carousel--thumb .carousel__indicators .carousel__indicator:nth-of-type(8) {
+  background-size: cover;
+  background-position: center;
+}
+
+.carousel__slide:nth-of-type(9),
+.carousel--thumb .carousel__indicators .carousel__indicator:nth-of-type(9) {
+  background-size: cover;
+  background-position: center;
+}
+
+.carousel__slide:nth-of-type(10),
+.carousel--thumb .carousel__indicators .carousel__indicator:nth-of-type(10) {
+  background-size: cover;
+  background-position: center;
+}
+
+.carousel__slide:nth-of-type(11),
+.carousel--thumb .carousel__indicators .carousel__indicator:nth-of-type(11) {
+  background-size: cover;
+  background-position: center;
+}
+
+.carousel__slide:nth-of-type(12),
+.carousel--thumb .carousel__indicators .carousel__indicator:nth-of-type(12) {
+  background-size: cover;
+  background-position: center;
+}
+
+.carousel__slide:nth-of-type(13),
+.carousel--thumb .carousel__indicators .carousel__indicator:nth-of-type(13) {
+  background-size: cover;
+  background-position: center;
+}
+
+.carousel__slide:nth-of-type(14),
+.carousel--thumb .carousel__indicators .carousel__indicator:nth-of-type(14) {
+  background-size: cover;
+  background-position: center;
+}
+
+</style>
+
+<script>
+  function isVisible(el) {
+        while (el) {
+            if (el === document) {
+                return true;
+            }
+
+            var $style = window.getComputedStyle(el, null);
+
+            if (!el) {
+                return false;
+            } else if (!$style) {
+                return false;
+            } else if ($style.display === 'none') {
+                return false;
+            } else if ($style.visibility === 'hidden') {
+                return false;
+            } else if (+$style.opacity === 0) {
+                return false;
+            } else if (($style.display === 'block' || $style.display === 'inline-block') &&
+                $style.height === '0px' && $style.overflow === 'hidden') {
+                return false;
+            } else {
+                return $style.position === 'fixed' || isVisible(el.parentNode);
+            }
+        }
+  }
+  
+  setInterval(function(){
+    var j=0;
+    var elements = document.querySelectorAll('#carousel0 .carousel__control--forward');
+    for(i=(elements.length - 1);i>-1;i--) {
+      if(isVisible(elements[i])) j=i;
+    }
+    elements[j].click();
+  },7000);
+  
+</script>
+</center>
+<center><i>Amazing people and places of 2021.</i></center>
+<p><br /></p>
+
+<h2 id="2022-goals">2022 Goals</h2>
+
+<ul class="task-list">
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Demonstrate analytics thought leadership.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Lift a 270kg total at 73kg bodyweight.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Drive an expanded emotional intelligence.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Max out annual 401K contribution, add $[REDACTED] to savings.</li>
+</ul>
+
+<h3 id="kpis">KPIs</h3>
+
+<ul>
+  <li>Demonstrate analytics thought leadership.
+    <ul>
+      <li>Deep work hours</li>
+      <li>Quantity and quality of work</li>
+      <li>Number of direct reports, 1:1’s</li>
+      <li>Number of relationships at AllTrails</li>
+      <li>Write about analytics 1h+ each day</li>
+    </ul>
+  </li>
+  <li>Lift a 270kg total at 73kg bodyweight.
+    <ul>
+      <li>Training PRs</li>
+      <li>Bodyweight</li>
+      <li>Daily mobility adherence</li>
+      <li>Stress reduction (?)</li>
+    </ul>
+  </li>
+  <li>Drive an expanded emotional intelligence.
+    <ul>
+      <li>Number of close friends</li>
+      <li>Number of dates</li>
+      <li>Relationship with family</li>
+      <li>Daily journal adherence</li>
+    </ul>
+  </li>
+  <li>Max out annual 401K contribution, add $[REDACTED] to savings.
+    <ul>
+      <li>Average monthly expenses</li>
+      <li>Average monthly income</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="recap">Recap</h2>
+
+<p>I’m so incredibly excited for 2022. I can’t wait for all of the awesome experiences and people. I’ve been astounded at all I’ve accomplished in 2020 &amp; 2021. I’m so stoked to see what’s around the corner.</p>]]></content><author><name>Matt Palmer</name><email>hello@mattpalmer.io</email></author><category term="blog" /><summary type="html"><![CDATA[The past year]]></summary></entry><entry><title type="html">The very best cohorted retention view.</title><link href="/projects/2021/11/16/the-very-best-cohorted-retention-view.html" rel="alternate" type="text/html" title="The very best cohorted retention view." /><published>2021-11-16T00:00:00+00:00</published><updated>2021-11-16T00:00:00+00:00</updated><id>/projects/2021/11/16/the-very-best-cohorted-retention-view</id><content type="html" xml:base="/projects/2021/11/16/the-very-best-cohorted-retention-view.html"><![CDATA[<p>Note: the cohort grid here was adapted from a very helpful <a href="https://towardsdatascience.com/a-step-by-step-introduction-to-cohort-analysis-in-python-a2cbbd8460ea">towards data science article</a>.</p>
+
+<h3 id="preface">Preface</h3>
+
+<p>A big part of product analytics is determining how adoption/usage is trending over time. A great way to track retention is a cohorted view— that is, for each day/week/month a user joins, how is that group of users engaging with the product? By divvying users up into cohorts, we can approximate how the performance of a feature changes in discreet buckets, without worrying about confounding variables.</p>
+
+<p>A <em>cohorted retention chart</em> plots cohorts by row and retention metrics by column, creating a grid. Highlighting the cohorts can visually depict how a product is changing over time:</p>
+
+<center>
+<figure>
+  <img src="/assets/posts/cohorted-retention/cohort-grid.png" alt="Example user retention cohort grid." />
+  <figcaption><i><center>Cohort months and totals are displayed for each row, with retention highlighted and colored by column.</center></i></figcaption>
+</figure>
+</center>
+
+<h3 id="generating-cohorted-views">Generating cohorted views</h3>
+
+<p>My personal cohort function, using the <code class="language-plaintext highlighter-rouge">seaborn</code> library is:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def sns_cohort_grid(pivoted_df, total_df, title, xlabel=''):
+    with sns.axes_style("white"):
+        fig,ax = plt.subplots(1, 2, figsize=(20, 8), sharey=True, gridspec_kw={'width_ratios': [1, 11]})
+
+        # retention matrix
+        sns.heatmap(pivoted_df,
+                    mask=pivoted_df.isnull(),
+                    annot=True,
+                    fmt='.0%',
+                    cmap='YlGnBu',
+                    ax=ax[1]
+                    )
+
+        ax[1].set_title(title, fontsize=16)
+        ax[1].set(xlabel=xlabel,
+                ylabel='')
+
+        # cohort size
+        white_cmap = mcolors.ListedColormap(['white'])
+        sns.heatmap(total_df,
+                    annot=True,
+                    cbar=False,
+                    fmt='g',
+                    cmap=white_cmap,
+                    ax=ax[0]
+                    )
+
+        fig.tight_layout()
+</code></pre></div></div>
+
+<p>This takes a <code class="language-plaintext highlighter-rouge">pivoted_df</code>, a <code class="language-plaintext highlighter-rouge">total_df</code>, a <code class="language-plaintext highlighter-rouge">title</code>, and an <code class="language-plaintext highlighter-rouge">xlabel</code> as arguments. The <code class="language-plaintext highlighter-rouge">pivoted_df</code> is a dataframe containing the necessary elements for the grid, pivoted in Pandas.</p>
+
+<p>For example, if I had the following table, <code class="language-plaintext highlighter-rouge">cohort_df</code>:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>cohort</th>
+      <th>tenure_months</th>
+      <th>users</th>
+      <th>cohort_total</th>
+      <th>pct</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2021-09-01</td>
+      <td>0</td>
+      <td>100000</td>
+      <td>100000</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>2021-09-01</td>
+      <td>1</td>
+      <td>90000</td>
+      <td>100000</td>
+      <td>.9</td>
+    </tr>
+    <tr>
+      <td>2021-09-01</td>
+      <td>2</td>
+      <td>60000</td>
+      <td>100000</td>
+      <td>.6</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>I would pivot using:</p>
+
+<p><code class="language-plaintext highlighter-rouge">cohort_df.pivot('cohort', 'tenure_months', 'pct')</code>.</p>
+
+<p>To obtain <code class="language-plaintext highlighter-rouge">total_df</code>, we can just apply a groupby to the cohorts:</p>
+
+<p><code class="language-plaintext highlighter-rouge">cohort_df[['cohort','cohort_total']].groupby('cohort').max()</code>.</p>
+
+<p>Our output will then be similar to the image show earlier, albeit with a more pleasing color scheme. 🙂</p>
+
+<p>A great way to visualize cohort grids is in a “Spaghetti” chart— plotting the retention of each cohort by month. While the charts can be quite busy, using a tool like Plotly Express allows you to isolate individual lines with one click, making the charts interactive and useful.</p>
+
+<center>
+<figure>
+  <img src="/assets/posts/cohorted-retention/spaghetti.jpg" alt="Example spaghetti chart." />
+  <figcaption><i><center>Example spaghetti chart for cohorted retention view.</center></i></figcaption>
+</figure>
+</center>
+
+<p>Additional analysis around cohorts includes:</p>
+
+<ul>
+  <li><strong>Averaging retention across months:</strong> this involves weighting each line by the number of users in that cohort and flattening charts. Think of taking the cohort grid displayed above and squishing it vertically into a single row.</li>
+  <li><strong>Segmenting by different attributes:</strong> this is often difficult, as it involves rewriting queries/changing groups if you pulled the data yourself, but picking target variables (i.e. pro status, user behavior, seasonality) and generating weighted retention for each often highlights trends and helps visualize discrepancies.</li>
+  <li><strong>Plotting tenure month performance by time:</strong> what if we plotted only how tenure month 1 performed over time (cohort on x-axis)? What about tenure month 2? Do we see changes? What might be driving these?</li>
+</ul>
+
+<p>An important call-out is that the total cohort size will influence retention. As with any product analysis, as the body of users changes, so does user-intent (the likelihood of the user to perform a certain action). If drastic population-level changes occur over the duration of the analysis, these should be communicated and adjusted for, if necessary.</p>]]></content><author><name>Matt Palmer</name><email>hello@mattpalmer.io</email></author><category term="projects" /><summary type="html"><![CDATA[Note: the cohort grid here was adapted from a very helpful towards data science article.]]></summary></entry><entry><title type="html">Using Jekyll Hooks to dynamically generate site content from external sources.</title><link href="/projects/2021/07/28/displaying-reading-list-in-real-time.html" rel="alternate" type="text/html" title="Using Jekyll Hooks to dynamically generate site content from external sources." /><published>2021-07-28T00:00:00+00:00</published><updated>2021-07-28T00:00:00+00:00</updated><id>/projects/2021/07/28/displaying-reading-list-in-real-time</id><content type="html" xml:base="/projects/2021/07/28/displaying-reading-list-in-real-time.html"><![CDATA[<figure>
+  <center><img src="/assets/posts/goodreads/header.png" alt="Currently Reading Header" /></center>
+</figure>
+
+<h3 id="preface">Preface</h3>
+
+<p>You may have noticed my fancy <a href="/books">books</a> page, which contains an up-to-date list of what I’m reading and what I’ve finished. That page is powered by Goodreads and updates on a daily basis. Initially, I was updating the page manually with a local build of my site and a push to GitHub, but I wanted to automate it— I already log my books on Goodreads, why shouldn’t that be the end of it?</p>
+
+<p>Goodreads profiles can be public (and <a href="https://www.goodreads.com/user/show/89626431-matt-palmer">my profile is</a>). With a bit of digging, you can find RSS feeds for Bookshelves, i.e. <em>Reading</em>, <em>Read</em>, <em>To-Read</em>. Once I had the links, I just needed to loop through the feed items + generate some Jekyll data and I’d be set, right?</p>
+
+<h3 id="reality-check">Reality check</h3>
+
+<p>In reality, the task is a little more complex. Here were the most prominent challenges:</p>
+
+<ol>
+  <li>Since I was building my site locally and pushing to GitHub pages, I would have to rebuild locally if I wanted the lists to update— that’s no fun. This was resolved through GitHub actions, which I’ll discuss shortly.</li>
+  <li>I initially went the route of using a Generator to build <code class="language-plaintext highlighter-rouge">YAML</code> files with the RSS items. That was problematic because of how Jekyll renders a website: Generators that fetch data and add it to the site are prioritized <em>after</em> the site is rendered. In practice it meant I had to build my site twice locally for changes to propagate (once to change the files and a second time to actually see them rendered in the browser). Additionally, when using Generators with a GitHub action to build the site, I was unable to overwrite the necessary files in the master branch, so my solution was completely non-functional with a remote build!</li>
+  <li>There is remarkably little documentation/discussion on how or when to use a Generator, Hook, or other custom plugin. I ultimately found <a href="https://humanwhocodes.com/blog/2019/04/jekyll-hooks-output-markdown/">this blog</a> helpful, along with the (sparse) Jekyll documentation on <a href="https://jekyllrb.com/docs/plugins/hooks/">hooks</a> and <a href="https://jekyllrb.com/docs/plugins/">plugins</a>.</li>
+</ol>
+
+<p>After my initial crack at Generator -&gt; GitHub Action -&gt; Reading List failed, I went back to the drawing board.</p>
+
+<h3 id="the-solution">The Solution</h3>
+
+<p>Until now, this post has been relatively boring with little useful information, so I’ll try to make it worth your time.</p>
+
+<p>My plugin needs to:</p>
+
+<ol>
+  <li>Run at build.</li>
+  <li>Fetch and parse items from my Goodreads feed.</li>
+  <li>Inject that into my site (somehow) so I can loop through them in a list with <a href="https://shopify.github.io/liquid/basics/introduction/">Liquid</a>.</li>
+  <li>Have the ability to run via a GitHub action, i.e. be a truly automated solution.</li>
+</ol>
+
+<h4 id="fetching-rss-items">Fetching RSS items</h4>
+
+<p>This was surprisingly simple, considering I had no Ruby knowledge beforehand. I used <em>Open URI</em> to get the URL, the <em>RSS</em> library to parse the feeds, and <em>Nokogiri</em> for some html parsing, thought that wasn’t strictly necessary.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>reading_url = [your-url-for-reading-books]
+read_url = [your-url-for-read-books]
+
+def get_rss_items(input_url)
+    item_list = []
+    URI.open(input_url) do |rss|
+        feed = RSS::Parser.parse(rss)
+
+        feed.items.each do |item|
+            parsed = Nokogiri::HTML.parse(item.description)
+
+            author = item.description.match(/author:\s*((\w|\s|\.|\/)*)/)[1]
+            date_read = item.description.match(/read\s*at:\s*((\d|\/)*)/)[1]
+            img_src = parsed.xpath("//img").attr('src').text
+            url = parsed.xpath("//a").attr('href').text
+            guid = item.link.split('/')[-1].split('?')[0]
+
+            payload = {'title' =&gt; item.title,
+                        'link' =&gt; url,
+                        'img_src' =&gt; img_src,
+                        'date_read' =&gt; item.pubDate.to_date,
+                        'author' =&gt; author,
+                        'guid' =&gt; guid
+            }
+            puts item.title
+            item_list.append(payload)
+        end
+    end
+    return item_list
+end
+</code></pre></div></div>
+
+<p>We start by opening the URL as <code class="language-plaintext highlighter-rouge">rss</code>, then passing that variable to our parser. A simple Ruby loop says that, for each item in the feed, we want to parse the description and other attributes (using Nokogiri and some regex) and assign them to a payload. We then print the title to the logs and append the payload to our list. The function then returns that list. Now all we need to do is get that into our site!</p>
+
+<h4 id="using-github-actions-to-build-the-site-on-a-schedule">Using GitHub Actions to build the site on a schedule</h4>
+
+<p>After a bit of Googling, I was able to find <a href="https://github.com/jeffreytse/jekyll-deploy-action">this action</a> that automates Jekyll deploys. Setting it up is pretty simple.</p>
+
+<ol>
+  <li>Create a <code class="language-plaintext highlighter-rouge">YAML</code> file in your <a href="https://github.com/mattppal/mattppal.github.io/blob/master/.github/workflows/build-jekyll.yaml">GitHub pages repository</a></li>
+  <li>Configure the <code class="language-plaintext highlighter-rouge">YAML</code> file to your preferred settings using the action docs. Note: this changes how your GitHub page functions. Rather than queuing off a <code class="language-plaintext highlighter-rouge">master</code> branch, you’re building the site, outputting it to a separate branch (<code class="language-plaintext highlighter-rouge">gh-pages</code> is the default) <em>then</em> building the page off that branch. It requires messing around with some settings, but I found the author of the action’s guide to be sufficient.</li>
+  <li>Run the action on a schedule!</li>
+</ol>
+
+<p>Now that we have the action firing, the site is being built remotely! Cool! But it’s completely indifferent from before— not cool!</p>
+
+<h4 id="loading-to-site-data-pre-render">Loading to site data pre-render</h4>
+
+<p>We need to get our Ruby function running at the point just before the site is built. That way, we can create a variable accessible to the site/page/doc to iterate through. digging through the <a href="https://jekyllrb.com/docs/plugins/hooks/">Jekyll docs</a>, I found the Hook page. From the syntax, it appears to do just what we want:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Jekyll::Hooks.register :site, :pre_render do |site|
+  # code to call after Jekyll renders a page
+end
+</code></pre></div></div>
+
+<p>Using the <em>site</em> and <em>pre_render</em> arguments, we should be able to generate content prior to rendering and make that available to the entire site!</p>
+
+<p>Wrapping our function in the Hook register:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>require 'rss'
+require 'open-uri'
+require 'yaml'
+require 'nokogiri'
+
+Jekyll::Hooks.register :site, :pre_render do |site, payload|
+    reading_url = [your-url-for-reading-books]
+    read_url = [your-url-for-read-books]
+
+    def get_rss_items(input_url)
+        item_list = []
+        URI.open(input_url) do |rss|
+            feed = RSS::Parser.parse(rss)
+            # Add fake virtual documents to the collection
+            feed.items.each do |item|
+                parsed = Nokogiri::HTML.parse(item.description)
+
+                author = item.description.match(/author:\s*((\w|\s|\.|\/)*)/)[1]
+                date_read = item.description.match(/read\s*at:\s*((\d|\/)*)/)[1]
+                img_src = parsed.xpath("//img").attr('src').text
+                url = parsed.xpath("//a").attr('href').text
+                guid = item.link.split('/')[-1].split('?')[0]
+
+                payload = {'title' =&gt; item.title,
+                            'link' =&gt; url,
+                            'img_src' =&gt; img_src,
+                            'date_read' =&gt; item.pubDate.to_date,
+                            'author' =&gt; author,
+                            'guid' =&gt; guid
+                }
+                puts item.title
+                item_list.append(payload)
+            end
+        end
+        return item_list
+    end
+
+    site.data['reading'] = get_rss_items(reading_url)
+    site.data['read'] = get_rss_items(read_url)
+
+end
+</code></pre></div></div>
+
+<p>Boom! Now we’re storing our lists in <code class="language-plaintext highlighter-rouge">site.data['reading']</code> and <code class="language-plaintext highlighter-rouge">site.data['read']</code>, respectively. Saving this to a Ruby file and popping it in the <code class="language-plaintext highlighter-rouge">_plugins</code> directory make it run on every build. Now that the data is accessible to the site and pages therein, Liquid makes it simple to iterate through them. Since things are always changing, you can checkout my current Goodreads script <a href="https://github.com/mattppal/mattppal.github.io/blob/master/_plugins/goodreads.rb">here</a>.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;div&gt;
+{% for book in site.data['reading'] %}
+    &lt;a href= "{{ book.link }}"&gt;
+      &lt;div&gt;
+        &lt;h5&gt;{{ book.title }}&lt;/h5&gt;
+          &lt;p&gt;{{ book.author }}&lt;/p&gt;
+        &lt;!-- &lt;small&gt;{{ book.date_read }}&lt;/small&gt; --&gt;
+      &lt;/div&gt;
+    &lt;/a&gt;
+{% endfor %}
+&lt;/div&gt;
+
+## Read
+
+&lt;div&gt;
+{% for book in site.data['read'] %}
+    &lt;a href= "{{ book.link }}"&gt;
+      &lt;div&gt;
+        &lt;h5&gt;{{ book.title }}&lt;/h5&gt;
+          &lt;p&gt;{{ book.author }}&lt;/p&gt;
+        &lt;!-- &lt;small&gt;{{ book.date_read }}&lt;/small&gt; --&gt;
+      &lt;/div&gt;
+    &lt;/a&gt;
+{% endfor %}
+&lt;/div&gt;
+</code></pre></div></div>
+
+<p>And voila! The <a href="/books">books</a> page arrives at it’s present form. Marking a book <em>read</em> or <em>reading</em> on Goodreads will flow through to the site nightly and 100% automatically!</p>
+
+<p>I’d love to hear if you found this helpful or implemented your own solution. Don’t hesitate to reach out via one of the links on-site!</p>]]></content><author><name>Matt Palmer</name><email>hello@mattpalmer.io</email></author><category term="projects" /><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">Dynamically generated Airflow TaskGroups for data teams.</title><link href="/projects/2021/05/22/airflow-framework.html" rel="alternate" type="text/html" title="Dynamically generated Airflow TaskGroups for data teams." /><published>2021-05-22T00:00:00+00:00</published><updated>2021-05-22T00:00:00+00:00</updated><id>/projects/2021/05/22/airflow-framework</id><content type="html" xml:base="/projects/2021/05/22/airflow-framework.html"><![CDATA[<ul id="markdown-toc">
+  <li><a href="#what-is-airflow" id="markdown-toc-what-is-airflow">What is Airflow?</a></li>
+  <li><a href="#dynamic-taskgroups" id="markdown-toc-dynamic-taskgroups">Dynamic TaskGroups</a></li>
+  <li><a href="#implementation" id="markdown-toc-implementation">Implementation</a></li>
+  <li><a href="#features" id="markdown-toc-features">Features</a></li>
+  <li><a href="#wrap-up" id="markdown-toc-wrap-up">Wrap-up</a></li>
+</ul>
+<h3 id="what-is-airflow">What is Airflow?</h3>
+
+<p>Apache Airflow is an open-source, community-driven platform for programmatic scheduling and execution of workflows. It integrates with many popular data sources and offers an accessible way to build and deploy pipelines.</p>
+
+<p>Airflow is great for analytics and engineering teams since it has a fairly gentle learning curve and can be implemented purely using Python. It’s fairly straightforward and provides a great UI. Being open source, new features are constantly being added. Community support means that common solutions can frequently be found online.</p>
+
+<h3 id="dynamic-taskgroups">Dynamic TaskGroups</h3>
+
+<p>Airflow provides a great opportunity for analytics teams— with a bit of setup, we can leverage the platform to provide dynamic workflow generation with minimal maintenance.</p>
+
+<p>While little Airflow knowledge is needed after setup, anyone with a basic Python knowledge can troubleshoot a DAG or implement new features. In the example discussed here, analysts and others can still add/subtract operators to/from a workflow, reorder execution, and assign priority groups with only a basic knowledge of Git.</p>
+
+<p>The basic premise is as follows:</p>
+
+<ol>
+  <li>Create a GitHub repository with an ETL/pipeline structure.</li>
+  <li>Use GitHub Actions to sync this repository to S3 or another file store.</li>
+  <li>Leverage the boto Python library in Airflow to pull in the repo.</li>
+  <li>Write a DAG to recurse through the tree and generate a pipeline.</li>
+</ol>
+
+<p>While we originally synced directly to GitHub, Airflow refresh frequencies quickly led us to hit the GitHub API limit. Our workaround was syncing the repo to S3, which uses actively developed packages and is more robust.</p>
+
+<p>With this method, analysts can push edits to the repository and sync them automatically with the DAG. We’re currently working on a similar implementation at Storyblocks. Our old tool, Jenkins, made it terribly difficult to troubleshoot ETL failures and was quite opaque to analysts— knowledge of the tool was necessary to make updates. Additionally, each time a push to our existing data repo was made, we had to swap Docker tags, a manual process that was easy to overlook. An Airflow implementation makes the ETL structure more accessible to the analytics team, removes manual steps, and improves maintainability.</p>
+
+<p>Furthermore, with some string parsing, we can create conventions for excluding, prioritizing, and grouping file execution. For example, prepending an ‘X_’ to exclude a file in the repo or using ‘1<em>’, ‘2</em>’, etc. to create groups of files that need to be ordered.</p>
+
+<h3 id="implementation">Implementation</h3>
+
+<p>Take the following example of a <a href="https://www.youtube.com/watch?v=D5hpjlYHEGw&amp;t=386s"><em>warehouse friendly schema</em></a> from Periscope Data co-founder Tom O’Neill. In Tom’s example, four stages are used for effective data management.</p>
+
+<ol>
+  <li>Protective: this stage enables file renaming and filtering. For example, suppose engineering has to rename a column in the source data. A protective view enables analytics to make one transformation from the source without having to rewrite multiple scripts.</li>
+  <li>Staging: we can perform simple transforms and tests off of the protective layer to ensure data quality and make slight adjustments.</li>
+  <li>Reporting: Wide tables generated from staging views. These are intended for transformations by analysts or to be used for aggregations, charts, etc.</li>
+  <li>Data Marts: team-focused data marts are a <em>source of truth</em> for teams. For example, there might be an <em>Finance Data Mart</em> that provides aggregations off reporting and staged data specific to the accounting team. We’re fine with building business logic into this mart, since the only consumers are the finance team and changes to their logic have no downstream consequences.</li>
+</ol>
+
+<p>Tom goes in to much more detail, but using this framework in our example:</p>
+
+<figure>
+  <img src="/assets/posts/airflow-etl/IMG_01.jpg" alt="Example implementation of Tom's warehouse." />
+  <figcaption><i><center>Example behavior of the first three steps of a DAG built from Tom's framework.</center></i></figcaption>
+</figure>
+
+<p>Using hierarchical folders in our repo allows us to group steps together neatly in our DAG. Expanding the step provides more detail and demonstrates example usage of “priority groups.”</p>
+
+<figure>
+  <img src="/assets/posts/airflow-etl/IMG_02.jpg" alt="TaskGroup expansion within the warehouse." />
+  <figcaption><i><center>Expanding an overarching step shows sub-steps and priority groups therein.</center></i></figcaption>
+</figure>
+
+<p>Here, priority groups are created by prepending a number to a script. Our code is written such that this will trigger another TaskGroup to be created and the labelled files to be dropped inside. With this method, multiple files can be named ‘1_’ and executed in parallel. The implementation might create more nesting than is necessary, but it works for our purposes. Expanding these groups reveals the labeled scripts.</p>
+
+<figure>
+  <img src="/assets/posts/airflow-etl/IMG_03.jpg" alt="Example priority group behavior" />
+  <figcaption><i><center>Using naming conventions, we can prioritize script execution using only Git.</center></i></figcaption>
+</figure>
+
+<h3 id="features">Features</h3>
+
+<p>The GitHub/Airflow integration enables the following:</p>
+
+<ul>
+  <li>Easy visual inspection of the ETL to confirm files are executing as intended.</li>
+  <li>Gantt charts and execution times for each step, allowing anyone to visually inspect and identify troublesome scripts.</li>
+  <li>One-step ETL updates through pushes to a GitHub repo.</li>
+  <li>A framework for implementing new execution features via Python and naming conventions.</li>
+  <li>Robust scheduling features standard with Airflow.</li>
+  <li>Email notifications for execution fails/retries.</li>
+</ul>
+
+<p>Additionally, we’re interested in adding the following:</p>
+
+<ul>
+  <li>A way to easily delineate those scripts that will halt execution on failure and those that have no effect.</li>
+</ul>
+
+<h3 id="wrap-up">Wrap-up</h3>
+
+<p>Our implementation uses the open-source tool Apache Airflow to create a low-maintenance DAG from any GitHub repo. In this example, we leverage a Warehouse framework from Tom O’Neill to programmatically execute scripts in a fictional data warehouse. The solution is easy to maintain for data teams and requires only a knowledge of Git to edit, allowing improved data accessibility and easier updates to warehouse code. Furthermore, the tool lets users edit prioritization and structure using a familiar folder interface. Hopefully, others will find this framework useful. For specific examples and code, please contact me directly.</p>]]></content><author><name>Matt Palmer</name><email>hello@mattpalmer.io</email></author><category term="projects" /><summary type="html"><![CDATA[What is Airflow? What is Airflow?]]></summary></entry></feed>

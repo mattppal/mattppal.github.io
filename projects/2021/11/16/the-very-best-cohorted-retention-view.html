@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>The very best cohorted retention view. | Matt Palmer</title>
+<meta name="generator" content="Jekyll v4.3.2" />
+<meta property="og:title" content="The very best cohorted retention view." />
+<meta name="author" content="Matt Palmer" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Note: the cohort grid here was adapted from a very helpful towards data science article." />
+<meta property="og:description" content="Note: the cohort grid here was adapted from a very helpful towards data science article." />
+<meta property="og:site_name" content="Matt Palmer" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-11-16T00:00:00+00:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="The very best cohorted retention view." />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Matt Palmer"},"dateModified":"2021-11-16T00:00:00+00:00","datePublished":"2021-11-16T00:00:00+00:00","description":"Note: the cohort grid here was adapted from a very helpful towards data science article.","headline":"The very best cohorted retention view.","mainEntityOfPage":{"@type":"WebPage","@id":"/projects/2021/11/16/the-very-best-cohorted-retention-view.html"},"url":"/projects/2021/11/16/the-very-best-cohorted-retention-view.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" title="Matt Palmer" /><script async src="https://www.googletagmanager.com/gtag/js?id=G-EC2ZQ7Y8TD"></script>
+<script>
+  window['ga-disable-G-EC2ZQ7Y8TD'] = window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes" || navigator.msDoNotTrack === "1";
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+
+  gtag('config', 'G-EC2ZQ7Y8TD');
+</script>
+
+<link rel="apple-touch-icon" sizes="120x120" href="/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+<link rel="manifest" href="/favicon/site.webmanifest">
+<link rel="mask-icon" href="/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="theme-color" content="#ffffff"></head>
+<body><header class="site-header">
+
+    <div class="wrapper"><a class="site-title" rel="author" href="/">Matt Palmer</a><nav class="site-nav">
+            <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+            <label for="nav-trigger">
+                <span class="menu-icon">
+                    <svg viewBox="0 0 18 15" width="18px" height="15px">
+                        <path
+                            d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z" />
+                    </svg>
+                </span>
+            </label>
+
+            <div class="trigger"><a class="page-link" href="/about/">about</a><a class="page-link" href="/art/">art</a><a class="page-link" href="/books/">books</a><a class="page-link" href="/cv">resume</a><a class="page-link" href="/writing/">writing</a></div>
+        </nav></div>
+</header><main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">The very best cohorted retention view.</h1>
+    <p class="post-meta"><time class="dt-published" datetime="2021-11-16T00:00:00+00:00" itemprop="datePublished">
+        Nov 16, 2021
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Note: the cohort grid here was adapted from a very helpful <a href="https://towardsdatascience.com/a-step-by-step-introduction-to-cohort-analysis-in-python-a2cbbd8460ea">towards data science article</a>.</p>
+
+<h3 id="preface">Preface</h3>
+
+<p>A big part of product analytics is determining how adoption/usage is trending over time. A great way to track retention is a cohorted view— that is, for each day/week/month a user joins, how is that group of users engaging with the product? By divvying users up into cohorts, we can approximate how the performance of a feature changes in discreet buckets, without worrying about confounding variables.</p>
+
+<p>A <em>cohorted retention chart</em> plots cohorts by row and retention metrics by column, creating a grid. Highlighting the cohorts can visually depict how a product is changing over time:</p>
+
+<center>
+<figure>
+  <img src="/assets/posts/cohorted-retention/cohort-grid.png" alt="Example user retention cohort grid." />
+  <figcaption><i><center>Cohort months and totals are displayed for each row, with retention highlighted and colored by column.</center></i></figcaption>
+</figure>
+</center>
+
+<h3 id="generating-cohorted-views">Generating cohorted views</h3>
+
+<p>My personal cohort function, using the <code class="language-plaintext highlighter-rouge">seaborn</code> library is:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def sns_cohort_grid(pivoted_df, total_df, title, xlabel=''):
+    with sns.axes_style("white"):
+        fig,ax = plt.subplots(1, 2, figsize=(20, 8), sharey=True, gridspec_kw={'width_ratios': [1, 11]})
+
+        # retention matrix
+        sns.heatmap(pivoted_df,
+                    mask=pivoted_df.isnull(),
+                    annot=True,
+                    fmt='.0%',
+                    cmap='YlGnBu',
+                    ax=ax[1]
+                    )
+
+        ax[1].set_title(title, fontsize=16)
+        ax[1].set(xlabel=xlabel,
+                ylabel='')
+
+        # cohort size
+        white_cmap = mcolors.ListedColormap(['white'])
+        sns.heatmap(total_df,
+                    annot=True,
+                    cbar=False,
+                    fmt='g',
+                    cmap=white_cmap,
+                    ax=ax[0]
+                    )
+
+        fig.tight_layout()
+</code></pre></div></div>
+
+<p>This takes a <code class="language-plaintext highlighter-rouge">pivoted_df</code>, a <code class="language-plaintext highlighter-rouge">total_df</code>, a <code class="language-plaintext highlighter-rouge">title</code>, and an <code class="language-plaintext highlighter-rouge">xlabel</code> as arguments. The <code class="language-plaintext highlighter-rouge">pivoted_df</code> is a dataframe containing the necessary elements for the grid, pivoted in Pandas.</p>
+
+<p>For example, if I had the following table, <code class="language-plaintext highlighter-rouge">cohort_df</code>:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>cohort</th>
+      <th>tenure_months</th>
+      <th>users</th>
+      <th>cohort_total</th>
+      <th>pct</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2021-09-01</td>
+      <td>0</td>
+      <td>100000</td>
+      <td>100000</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>2021-09-01</td>
+      <td>1</td>
+      <td>90000</td>
+      <td>100000</td>
+      <td>.9</td>
+    </tr>
+    <tr>
+      <td>2021-09-01</td>
+      <td>2</td>
+      <td>60000</td>
+      <td>100000</td>
+      <td>.6</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>I would pivot using:</p>
+
+<p><code class="language-plaintext highlighter-rouge">cohort_df.pivot('cohort', 'tenure_months', 'pct')</code>.</p>
+
+<p>To obtain <code class="language-plaintext highlighter-rouge">total_df</code>, we can just apply a groupby to the cohorts:</p>
+
+<p><code class="language-plaintext highlighter-rouge">cohort_df[['cohort','cohort_total']].groupby('cohort').max()</code>.</p>
+
+<p>Our output will then be similar to the image show earlier, albeit with a more pleasing color scheme. 🙂</p>
+
+<p>A great way to visualize cohort grids is in a “Spaghetti” chart— plotting the retention of each cohort by month. While the charts can be quite busy, using a tool like Plotly Express allows you to isolate individual lines with one click, making the charts interactive and useful.</p>
+
+<center>
+<figure>
+  <img src="/assets/posts/cohorted-retention/spaghetti.jpg" alt="Example spaghetti chart." />
+  <figcaption><i><center>Example spaghetti chart for cohorted retention view.</center></i></figcaption>
+</figure>
+</center>
+
+<p>Additional analysis around cohorts includes:</p>
+
+<ul>
+  <li><strong>Averaging retention across months:</strong> this involves weighting each line by the number of users in that cohort and flattening charts. Think of taking the cohort grid displayed above and squishing it vertically into a single row.</li>
+  <li><strong>Segmenting by different attributes:</strong> this is often difficult, as it involves rewriting queries/changing groups if you pulled the data yourself, but picking target variables (i.e. pro status, user behavior, seasonality) and generating weighted retention for each often highlights trends and helps visualize discrepancies.</li>
+  <li><strong>Plotting tenure month performance by time:</strong> what if we plotted only how tenure month 1 performed over time (cohort on x-axis)? What about tenure month 2? Do we see changes? What might be driving these?</li>
+</ul>
+
+<p>An important call-out is that the total cohort size will influence retention. As with any product analysis, as the body of users changes, so does user-intent (the likelihood of the user to perform a certain action). If drastic population-level changes occur over the duration of the analysis, these should be communicated and adjusted for, if necessary.</p>
+
+  </div><a class="u-url" href="/projects/2021/11/16/the-very-best-cohorted-retention-view.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+    <data class="u-url" href="/%20/"></data>
+
+    <div class="wrapper">
+
+        <div class="footer-col-wrapper">
+            <div class="footer-col">
+                <p class="feed-subscribe">
+                    <a href="/feed.xml">
+                        <svg class="svg-icon orange">
+                            <use xlink:href="/assets/minima-social-icons.svg#rss"></use>
+                        </svg><span>Subscribe</span>
+                    </a>
+                </p>
+                <ul class="contact-list">
+                    <li class="p-name">Matt Palmer</li>
+                    <li><a class="u-email" href="mailto:hello@mattpalmer.io">hello@mattpalmer.io</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <p>Data Enginner at Underline &amp; Swarthmore College grad. You can find me at the gym,  climbing rocks, or on a trail when not at work.
+</p>
+            </div>
+        </div>
+
+        <div class="social-links"><ul class="social-media-list"><li><a rel="me" href="https://github.com/mattppal" title="mattppal"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg></a></li><li><a rel="me" href="https://www.linkedin.com/in/matt-palmer" title="matt-palmer"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#linkedin"></use></svg></a></li><li><a rel="me" href="https://twitter.com/mattppal" title="mattppal"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg></a></li><li><a rel="me" href="https://keybase.io/mattpal" title="mattpal"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#keybase"></use></svg></a></li></ul>
+</div>
+
+    </div>
+
+    <script type="text/typescript" src="./assets/utm.ts"></script>
+
+</footer></body>
+
+</html>

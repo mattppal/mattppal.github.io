@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>How Git works. | Matt Palmer</title>
+<meta name="generator" content="Jekyll v4.3.2" />
+<meta property="og:title" content="How Git works." />
+<meta name="author" content="Matt Palmer" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Note: This is a pretty rough/unpolished guide I wrote while following a Udemy course. I found the first half of the course to be very helpful and interesting, while the latter half was a bit longwinded and unnecessary. For anyone that wants a fundamental understanding of Git, I think it’s of great value." />
+<meta property="og:description" content="Note: This is a pretty rough/unpolished guide I wrote while following a Udemy course. I found the first half of the course to be very helpful and interesting, while the latter half was a bit longwinded and unnecessary. For anyone that wants a fundamental understanding of Git, I think it’s of great value." />
+<meta property="og:site_name" content="Matt Palmer" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-03-01T00:00:00+00:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="How Git works." />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Matt Palmer"},"dateModified":"2021-03-01T00:00:00+00:00","datePublished":"2021-03-01T00:00:00+00:00","description":"Note: This is a pretty rough/unpolished guide I wrote while following a Udemy course. I found the first half of the course to be very helpful and interesting, while the latter half was a bit longwinded and unnecessary. For anyone that wants a fundamental understanding of Git, I think it’s of great value.","headline":"How Git works.","mainEntityOfPage":{"@type":"WebPage","@id":"/studies/2021/03/01/how-git-works.html"},"url":"/studies/2021/03/01/how-git-works.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" title="Matt Palmer" /><script async src="https://www.googletagmanager.com/gtag/js?id=G-EC2ZQ7Y8TD"></script>
+<script>
+  window['ga-disable-G-EC2ZQ7Y8TD'] = window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes" || navigator.msDoNotTrack === "1";
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+
+  gtag('config', 'G-EC2ZQ7Y8TD');
+</script>
+
+<link rel="apple-touch-icon" sizes="120x120" href="/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+<link rel="manifest" href="/favicon/site.webmanifest">
+<link rel="mask-icon" href="/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="theme-color" content="#ffffff"></head>
+<body><header class="site-header">
+
+    <div class="wrapper"><a class="site-title" rel="author" href="/">Matt Palmer</a><nav class="site-nav">
+            <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+            <label for="nav-trigger">
+                <span class="menu-icon">
+                    <svg viewBox="0 0 18 15" width="18px" height="15px">
+                        <path
+                            d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z" />
+                    </svg>
+                </span>
+            </label>
+
+            <div class="trigger"><a class="page-link" href="/about/">about</a><a class="page-link" href="/art/">art</a><a class="page-link" href="/books/">books</a><a class="page-link" href="/cv">resume</a><a class="page-link" href="/writing/">writing</a></div>
+        </nav></div>
+</header><main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">How Git works.</h1>
+    <p class="post-meta"><time class="dt-published" datetime="2021-03-01T00:00:00+00:00" itemprop="datePublished">
+        Mar 1, 2021
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p><strong>Note:</strong> This is a pretty rough/unpolished guide I wrote while following a <a href="https://www.udemy.com/course/git-and-github-complete-guide/">Udemy course</a>. I found the first half of the course to be very helpful and interesting, while the latter half was a bit longwinded and unnecessary. For anyone that wants a fundamental understanding of Git, I think it’s of great value.</p>
+
+<ul id="markdown-toc">
+  <li><a href="#brief-introduction-to-shell" id="markdown-toc-brief-introduction-to-shell">(Brief) Introduction to Shell</a></li>
+  <li><a href="#git-under-the-hood" id="markdown-toc-git-under-the-hood">Git under the hood</a>    <ul>
+      <li><a href="#git-vs-github" id="markdown-toc-git-vs-github">Git vs. GitHub</a></li>
+      <li><a href="#initializing-a-new-git-repo" id="markdown-toc-initializing-a-new-git-repo">Initializing a new git repo</a></li>
+      <li><a href="#json-vs-git-databases" id="markdown-toc-json-vs-git-databases">JSON vs. Git Databases</a></li>
+      <li><a href="#what-is-a-hash-function" id="markdown-toc-what-is-a-hash-function">What is a Hash function?</a></li>
+      <li><a href="#hash-function-overview" id="markdown-toc-hash-function-overview">Hash function overview.</a></li>
+      <li><a href="#contents-of-git-objects" id="markdown-toc-contents-of-git-objects">Contents of Git objects</a></li>
+      <li><a href="#tree-objects-in-git" id="markdown-toc-tree-objects-in-git">Tree objects in Git</a></li>
+      <li><a href="#examining-a-tree-object" id="markdown-toc-examining-a-tree-object">Examining a tree object</a></li>
+      <li><a href="#overview-of-file-distribution" id="markdown-toc-overview-of-file-distribution">Overview of file distribution</a></li>
+    </ul>
+  </li>
+  <li><a href="#basic-git-ops" id="markdown-toc-basic-git-ops">Basic Git ops</a>    <ul>
+      <li><a href="#creating-a-commit" id="markdown-toc-creating-a-commit">Creating a commit</a></li>
+      <li><a href="#manually-moving-files-from-working-dir-to-repo" id="markdown-toc-manually-moving-files-from-working-dir-to-repo">Manually moving files from working-dir to repo</a></li>
+    </ul>
+  </li>
+  <li><a href="#git-branches--head" id="markdown-toc-git-branches--head">Git branches &amp; head</a>    <ul>
+      <li><a href="#what-is-a-branch" id="markdown-toc-what-is-a-branch">What is a branch?</a></li>
+      <li><a href="#what-is-head" id="markdown-toc-what-is-head">What is HEAD?</a></li>
+      <li><a href="#checking-out-a-specific-commit" id="markdown-toc-checking-out-a-specific-commit">Checking out a specific commit</a></li>
+      <li><a href="#git-branch-management" id="markdown-toc-git-branch-management">Git Branch management</a></li>
+    </ul>
+  </li>
+  <li><a href="#cloning-exploring-and-modifying-public-repos" id="markdown-toc-cloning-exploring-and-modifying-public-repos">Cloning, exploring, and modifying public repos</a>    <ul>
+      <li><a href="#git-diff" id="markdown-toc-git-diff">Git diff</a></li>
+    </ul>
+  </li>
+  <li><a href="#merging-branches--merge-conflicts" id="markdown-toc-merging-branches--merge-conflicts">Merging branches &amp; merge conflicts</a></li>
+  <li><a href="#git-push-fetch-and-pull" id="markdown-toc-git-push-fetch-and-pull">Git push, fetch, and pull</a></li>
+  <li><a href="#git-tags" id="markdown-toc-git-tags">Git tags</a>    <ul>
+      <li><a href="#staging-vs-production" id="markdown-toc-staging-vs-production"><strong>Staging vs. Production</strong></a></li>
+      <li><a href="#semantic-versioning" id="markdown-toc-semantic-versioning">Semantic Versioning</a></li>
+    </ul>
+  </li>
+  <li><a href="#rebasing" id="markdown-toc-rebasing">Rebasing</a>    <ul>
+      <li><a href="#rebasing-steps" id="markdown-toc-rebasing-steps">Rebasing Steps</a></li>
+    </ul>
+  </li>
+  <li><a href="#ignoring-files-in-git" id="markdown-toc-ignoring-files-in-git">Ignoring files in Git</a>    <ul>
+      <li><a href="#basic-gitignore-rules" id="markdown-toc-basic-gitignore-rules">Basic gitignore rules</a></li>
+      <li><a href="#common-practices--templates" id="markdown-toc-common-practices--templates">Common practices &amp; templates</a></li>
+    </ul>
+  </li>
+  <li><a href="#detached-head" id="markdown-toc-detached-head">Detached HEAD</a></li>
+</ul>
+
+<p>Really cool interactive Git tool: <a href="https://learngitbranching.js.org/">https://learngitbranching.js.org/</a></p>
+
+<p>Note: this guide is derived from the Udemy course: <a href="https://www.udemy.com/course/git-and-github-complete-guide/">https://www.udemy.com/course/git-and-github-complete-guide/</a></p>
+
+<h3 id="brief-introduction-to-shell">(Brief) Introduction to Shell</h3>
+
+<ul>
+  <li>The <em>Terminal</em> is just a graphical user interface that grants access to the <em>shell.</em> The default shell on Mac is <em>Bash</em> the default shell on Windows is <em>PowerShell</em>. The shell is a program that takes keyboard commands and passes them to the OS to be executed.</li>
+  <li>
+    <p>Not going to delve into the shell too much here, but it allows us to interact with Git. Check out <em>The Linux Command Line— A Complete Introduction</em> by William Shotts for all you could every want to know about the shell.</p>
+  </li>
+  <li>
+    <p>iTerm is a custom terminal for MacOS. ZSH is a custom shell for MacOS. oh my zsh is a framework for managing custom shells. Besides looking better, these tools can be used to customize and improve the functionality of the user’s terminal &amp; shell.</p>
+  </li>
+  <li>Basic shell commands (many more in the book)
+    <ul>
+      <li>mkdir - make directory</li>
+      <li>ls - list files and directories</li>
+      <li>cd - change directory</li>
+      <li>. - alias of current directory</li>
+      <li>.. - alias of parent directory</li>
+      <li>nano - edit file</li>
+      <li>clear - clear terminal</li>
+      <li>Tab - autocomplete</li>
+      <li>echo - print to terminal</li>
+      <li>man - help on specific command</li>
+      <li>touch - create new file, change file permissions</li>
+      <li>&gt; - write to file</li>
+      <li>&gt;&gt; - append to file</li>
+      <li>cat - list contents of file</li>
+      <li>rm - remove files and directories</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="git-under-the-hood">Git under the hood</h2>
+
+<h3 id="git-vs-github">Git vs. GitHub</h3>
+
+<p><strong>Git</strong> is a distributed version-control system, it can track changes in files in any folder, called a <em>repository.</em> Really, it’s just a special file system.</p>
+
+<p>Git has it’s own file structure in which each file is stored in a separate document with it’s own hash. In that way, git is a persistent <em>hash map</em> that stores key-value pairs— key = hash, value = content of file.</p>
+
+<p>Git is designed to be used without an internet connection, but <strong>Github</strong> is used to manage local git repositories— it’s a repository hosting service. Github allows the user to backup local repos, but also unlocks the potential for collaboration among teams.</p>
+
+<h3 id="initializing-a-new-git-repo">Initializing a new git repo</h3>
+
+<p><em>git init</em> serves to create an empty git repo with you can then add files to. Behind the scenes, a new hidden <code class="language-plaintext highlighter-rouge">.git</code> folder is created. Inside the hidden folder are a number of files and directories containing information relative to the repo.</p>
+
+<p><img src="/assets/posts/git/IMG_1.png" alt="/assets/posts/git/IMG_1.png" /></p>
+
+<p>Git has it’s own file structure in which all information goes into the <code class="language-plaintext highlighter-rouge">objects</code> folder. There are four object types. These can be manipulated with low level commands like <code class="language-plaintext highlighter-rouge">git hash-object</code> and <code class="language-plaintext highlighter-rouge">git cat-file</code>.</p>
+
+<ul>
+  <li>
+    <p>Blob</p>
+
+    <p>Files. Any files with any extensions. Video, pictures, text, etc.</p>
+  </li>
+  <li>
+    <p>Tree</p>
+
+    <p>Directory information. Tree information may be a set of blobs or a set of blobs and other trees.</p>
+  </li>
+  <li>
+    <p>Commit</p>
+
+    <p>Commits, i.e. versions are stored in git.</p>
+  </li>
+  <li>
+    <p>Annotated Tag</p>
+
+    <p>Persistent text pointers which refer to specific commits.</p>
+  </li>
+</ul>
+
+<p>A new object can be created with the command <code class="language-plaintext highlighter-rouge">git hash-object -w</code>. This creates a git object and writes it into a repository, where it can then be examined with <code class="language-plaintext highlighter-rouge">git cat-file</code>. The command <code class="language-plaintext highlighter-rouge">git mktree</code> is used to make new trees in a repo.</p>
+
+<p>For example, the following commands initialize a new object— note how the different quotations generate the same string output.</p>
+
+<p><img src="/assets/posts/git/IMG_2.png" alt="/assets/posts/git/IMG_2.png" /></p>
+
+<p>No changes are present in the folder structure until the final command when <code class="language-plaintext highlighter-rouge">-w</code> is passed. Now, a new object exists. Note how this object is named: b7 + the rest of the string above. The string is what’s known as a hash.</p>
+
+<p><img src="/assets/posts/git/IMG_3.png" alt="/assets/posts/git/IMG_3.png" /></p>
+
+<p>For git, the folder name + file name = hash. Hash is generated from file input.</p>
+
+<h3 id="json-vs-git-databases">JSON vs. Git Databases</h3>
+
+<p>JSON (JavaScript Object Notation) is a common database format in programming where data is stored in key-value pairs. For example, in the following, the <code class="language-plaintext highlighter-rouge">id</code> key has a value of <code class="language-plaintext highlighter-rouge">file</code>.</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="dl">"</span><span class="s2">menu</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span>
+  <span class="dl">"</span><span class="s2">id</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">file</span><span class="dl">"</span><span class="p">,</span>
+  <span class="dl">"</span><span class="s2">value</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">File</span><span class="dl">"</span><span class="p">,</span>
+  <span class="dl">"</span><span class="s2">popup</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="dl">"</span><span class="s2">menuitem</span><span class="dl">"</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span><span class="dl">"</span><span class="s2">value</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">New</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">onclick</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">CreateNewDoc()</span><span class="dl">"</span><span class="p">},</span>
+      <span class="p">{</span><span class="dl">"</span><span class="s2">value</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Open</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">onclick</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">OpenDoc()</span><span class="dl">"</span><span class="p">},</span>
+      <span class="p">{</span><span class="dl">"</span><span class="s2">value</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Close</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">onclick</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">CloseDoc()</span><span class="dl">"</span><span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}}</span>
+</code></pre></div></div>
+
+<p>Git databases also store key-value pairs, with the file hash as a key and the contents as a value. The difference comes from the fact that the <em>same hash can be generated from different inputs,</em> as demonstrated from the screenshot above where “Hello, Git” &amp; ‘Hello, Git’ returned the same hash.</p>
+
+<h3 id="what-is-a-hash-function">What is a Hash function?</h3>
+
+<p>A hash function is one that takes any, variable length input and returns a fixed length hash. In the example above, we passed a short string to generate a hash, but hashes can be generated for any size file from a few characters to large video files.</p>
+
+<p>Thus, an important characteristic of the hash function is that <strong>merely knowing the hash does not allow you to recursively generate inputs</strong> (how could we rebuild a video from a limited fixed length string?) That is, hash functions are <em>one way functions</em>. That’s why passwords are stored in hashes for many websites.</p>
+
+<p>The other important characteristic of hash functions is that the same input will always produce the same hash. If you were to run the same command <code class="language-plaintext highlighter-rouge">echo "Hello, Git" | git hash-object --stdin</code>, you should return the same hash.</p>
+
+<p>Another characteristic of hash functions is that even a small change, e.g. adding a <code class="language-plaintext highlighter-rouge">!</code>to the end of the string, will produce an entirely different hash. That’s why hashes are one-way: you can’t reverse-engineer input.</p>
+
+<h3 id="hash-function-overview">Hash function overview.</h3>
+
+<ul>
+  <li>Common has functions you’ve probably heard of
+    <ul>
+      <li>MD5 - 128 bit</li>
+      <li>SHA1 - 160 bit</li>
+      <li>SHA256 - 256 bit</li>
+      <li>SHA384 - 384 bit</li>
+      <li>SHA512 - 512 bit</li>
+    </ul>
+  </li>
+</ul>
+
+<p>Git uses the SHA1 algorithm, which creates strings that are 160 bits long in hexadecimal format. Hexadecimal format contains the following characters <code class="language-plaintext highlighter-rouge">0123456789ABCDEF</code>, where capitalization is not considered. It is a <em>base 16</em> representation, as compared to binary, which is base 2 (<code class="language-plaintext highlighter-rouge">01</code>).</p>
+
+<p>By now, it may be apparent that there is some limit to the number of files that can be stored in the same repository— if a hash function generates a new output for any given input, the number of unique outputs must be limited by the different hash hexadecimal combinations. Two important questions are <em>How many files can one store in a Git repo?</em> and <em>What is the probability of generating the same exact hash for different inputs?</em></p>
+
+<ol>
+  <li>Given that a hash is a base 16 representation, the total number of combinations is equal to $2^{160} = 1.46 \times 10^{48}$, since SHA1 is <em>160 bits long</em> which corresponds to the binary representation in which there are only two combinations, 0 &amp; 1. So I think it’s safe to say this isn’t something to worry about. 🙂</li>
+  <li>For repeated trials of an event with the same probability, e.g. repeatedly rolling dice, probabilities must be multiplied to obtain an overall result. The odds of rolling two consecutive 6’s is $\frac{1}{6} \times \frac{1}{6} = \frac{1}{36}$. For completeness, the probability of rolling numbers that differ, e.g. 4 &amp; 5, we multiply the answer by two, since there are two outcomes in which we roll that pair (each die can take on a 4 or 5, respectively).</li>
+</ol>
+
+<p>Given that we know the total number of SHA1 hashes, the calculation is similar. We must multiply two probabilities $2^{-160} \times 2^{-160} = 2^{-320} = 4.68 \times 10^{-97}$. It’s safe to say that we don’t have to worry about this either.</p>
+
+<ul>
+  <li>
+    <p>Basic <em>git cat-file</em> options</p>
+
+    <p><code class="language-plaintext highlighter-rouge">git cat-file -p &lt;hash&gt;</code> - contents of object</p>
+
+    <p><code class="language-plaintext highlighter-rouge">git cat-file -s &lt;hash&gt;</code> - size of object</p>
+
+    <p><code class="language-plaintext highlighter-rouge">git cat-file -t &lt;hash&gt;</code> - type of object</p>
+  </li>
+  <li>
+    <p>Basic <em>git hash-object</em> options</p>
+
+    <p><code class="language-plaintext highlighter-rouge">git hash-object &lt;file&gt; -w</code> - write a file to the repo</p>
+  </li>
+</ul>
+
+<h3 id="contents-of-git-objects">Contents of Git objects</h3>
+
+<p><img src="/assets/posts/git/IMG_4.png" alt="/assets/posts/git/IMG_4.png" /></p>
+
+<ul>
+  <li>Each blob stored in an objects folder has a name, but that name is derived from the SHA1 hash.</li>
+  <li>Note there is no <code class="language-plaintext highlighter-rouge">git cat-file</code> command to return the filename… It isn’t stored!</li>
+  <li>Git objects are comprised of three fields and a delimiter: content + object type + object length = hash .</li>
+</ul>
+
+<p>For example, recall our earlier hash. We can reproduce the same result with the following command</p>
+
+<p><img src="/assets/posts/git/IMG_5.png" alt="/assets/posts/git/IMG_5.png" /></p>
+
+<p>Thus, for our original command <code class="language-plaintext highlighter-rouge">echo "Hello, Git"</code> we know git is storing</p>
+
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">blob</code> - the type</li>
+  <li><code class="language-plaintext highlighter-rouge">11</code> - the length</li>
+  <li><code class="language-plaintext highlighter-rouge">\0</code> - the delimiter</li>
+  <li><code class="language-plaintext highlighter-rouge">Hello, Git</code> - the contents!</li>
+</ol>
+
+<p>NOTE: if using terminal, make sure to pass <code class="language-plaintext highlighter-rouge">echo -e</code> to interpret backslash characters.</p>
+
+<h3 id="tree-objects-in-git">Tree objects in Git</h3>
+
+<p><img src="/assets/posts/git/IMG_6.png" alt="/assets/posts/git/IMG_6.png" /></p>
+
+<p>Trees are stored as links to blobs or other trees, as above. Trees store file names of the git blobs themselves, which is why filenames need not be stored in git blobs!</p>
+
+<p>The structure goes like: permission, object type, hash, name. In order to use the <code class="language-plaintext highlighter-rouge">mktree</code> command, one only need create a txt file and list the objects as formatted in the above image.</p>
+
+<p><img src="/assets/posts/git/IMG_7.png" alt="/assets/posts/git/IMG_7.png" /></p>
+
+<p>By passing the two blob objects with permissions and their corresponding hashes to <code class="language-plaintext highlighter-rouge">git mktree</code>, we get a tree object with the hash <code class="language-plaintext highlighter-rouge">3b95df0ac6365c72e9b0ff6c449645c87e6e1159</code>.</p>
+
+<p><img src="/assets/posts/git/IMG_8.png" alt="/assets/posts/git/IMG_8.png" /></p>
+
+<ul>
+  <li>Git objects permissions</li>
+</ul>
+
+<h3 id="examining-a-tree-object">Examining a tree object</h3>
+
+<ul>
+  <li>We can use <code class="language-plaintext highlighter-rouge">git cat-file -p</code> to examine the contents of our tree— which should be what we passed in <code class="language-plaintext highlighter-rouge">temp-tree.txt</code>.</li>
+  <li>The size &amp; type can be found with the <code class="language-plaintext highlighter-rouge">-s</code> &amp; <code class="language-plaintext highlighter-rouge">-p</code> parameters</li>
+</ul>
+
+<p><img src="/assets/posts/git/IMG_9.png" alt="/assets/posts/git/IMG_9.png" /></p>
+
+<p><img src="/assets/posts/git/IMG_10.png" alt="/assets/posts/git/IMG_10.png" /></p>
+
+<p>So, using only low-level commands, we’ve created the following file-structure in our repository:</p>
+
+<p><img src="/assets/posts/git/IMG_11.png" alt="/assets/posts/git/IMG_11.png" /></p>
+
+<h3 id="overview-of-file-distribution">Overview of file distribution</h3>
+
+<p><img src="/assets/posts/git/IMG_12.png" alt="/assets/posts/git/IMG_12.png" /></p>
+
+<p>Git uses a <em>Staging Area</em> or <em>Index</em> to transition files from the working directory to the repository or restore them from the repository to the working directory. Using the command <code class="language-plaintext highlighter-rouge">git ls-files</code> we can examine the staging area.</p>
+
+<p><code class="language-plaintext highlighter-rouge">git read-tree &lt;hash&gt;</code> is used to move files from the repository to the staging area. Using <code class="language-plaintext highlighter-rouge">read-tree</code> moves the tree and all files therein to staging. For example, to move the tree we created above:</p>
+
+<p><img src="/assets/posts/git/IMG_13.png" alt="/assets/posts/git/IMG_13.png" /></p>
+
+<p>You can see <code class="language-plaintext highlighter-rouge">ls-files</code> returns those in our tree. The <code class="language-plaintext highlighter-rouge">-s</code> parameter allows a list view, which shows permissions, a hash, a <em>zero</em> indicating that these files in staging are identical to those in the repository, and the file names.</p>
+
+<p>Note when using read tree, the terminal indicates a change in the repository. The yellow highlight means that there are uncommitted changes in master (the other screenshots don’t show this b/c I deviated from directions).</p>
+
+<p><img src="/assets/posts/git/IMG_14.png" alt="/assets/posts/git/IMG_14.png" /></p>
+
+<p>Using <code class="language-plaintext highlighter-rouge">git checkout-index -a</code> , we can grab all of the files in the staging area and move them to the working directory.</p>
+
+<p><img src="/assets/posts/git/IMG_15.png" alt="/assets/posts/git/IMG_15.png" /></p>
+
+<p>These are the steps to manually move files from a repository to a staging area and recreate the same files in a working directory!</p>
+
+<h2 id="basic-git-ops">Basic Git ops</h2>
+
+<p>Since git is a distributed version control system, author info is reported in each commit. User information can be set with the following commands</p>
+
+<ul>
+  <li>
+    <p>Set author name</p>
+
+    <p><code class="language-plaintext highlighter-rouge">git config --global user.name &lt;Name&gt;</code></p>
+  </li>
+  <li>
+    <p>Set author email</p>
+
+    <p><code class="language-plaintext highlighter-rouge">git config --global user.email &lt;Email&gt;</code></p>
+  </li>
+</ul>
+
+<h3 id="creating-a-commit">Creating a commit</h3>
+
+<p>I would be remiss if I didn’t at least mention how to make a commit. <code class="language-plaintext highlighter-rouge">git commit -m</code> moves items from the staging area to the repository with a message. Use <code class="language-plaintext highlighter-rouge">git status</code> to see, you guessed it, the status of the repo.</p>
+
+<p><img src="/assets/posts/git/IMG_16.png" alt="/assets/posts/git/IMG_16.png" /></p>
+
+<p>Note we now have a new git object, it’s our commit! The commit has a pointer to the tree we changed, as well as author information and the commit message.</p>
+
+<p><img src="/assets/posts/git/IMG_17.png" alt="/assets/posts/git/IMG_17.png" /></p>
+
+<h3 id="manually-moving-files-from-working-dir-to-repo">Manually moving files from working-dir to repo</h3>
+
+<p><img src="/assets/posts/git/IMG_18.png" alt="/assets/posts/git/IMG_18.png" /></p>
+
+<p>In the previous example, we created two blobs and a tree in the repo and moved them all across the index to the working directory, creating a commit. But what about the more natural flow— moving from the working directory, to staging, to the repo?</p>
+
+<p>That is achieved with the more common git commands, which I’m sure you’re familiar with:</p>
+
+<ul>
+  <li>
+    <p>Basic Git commands</p>
+
+    <p><code class="language-plaintext highlighter-rouge">git status</code> - current state of the repository</p>
+
+    <p><code class="language-plaintext highlighter-rouge">git add</code> - adds files to the staging area (from working directory)</p>
+
+    <p><code class="language-plaintext highlighter-rouge">git commit</code> - writes changes to git repository (creates commit object)</p>
+
+    <p><code class="language-plaintext highlighter-rouge">git log</code> - history of changes (commits)</p>
+
+    <p><code class="language-plaintext highlighter-rouge">git checkout</code> - checkout commit or branch</p>
+  </li>
+</ul>
+
+<p>First, we create a new file in our repository <code class="language-plaintext highlighter-rouge">nano file3.txt</code> and add some contents.</p>
+
+<p>Next, we add the new file to the staging area <code class="language-plaintext highlighter-rouge">git add</code>. Until we add the file, it will be <em>untracked.</em> There are four possible statuses for git files.</p>
+
+<ul>
+  <li>
+    <p>Git file tracking statuses</p>
+
+    <p><img src="/assets/posts/git/IMG_19.png" alt="/assets/posts/git/IMG_19.png" /></p>
+
+    <ul>
+      <li>
+        <p>Untracked</p>
+
+        <p>Any new files added to a working directory will be untracked until added to the staging area.</p>
+
+        <p><img src="/assets/posts/git/IMG_20.png" alt="/assets/posts/git/IMG_20.png" /></p>
+      </li>
+      <li>
+        <p>Unmodified</p>
+
+        <p>For an unmodified file, we must commit staged files using <code class="language-plaintext highlighter-rouge">git commit</code>. Unmodified files can be removed or ignored from git.</p>
+      </li>
+      <li>
+        <p>Modified</p>
+
+        <p>Changing a file in the working directory that is already tracked will change it’s state to modified.</p>
+      </li>
+      <li>
+        <p>Staged</p>
+
+        <p>To move a file from untracked to a staged state, use <code class="language-plaintext highlighter-rouge">git add</code> , this initiates file tracking.</p>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<p><code class="language-plaintext highlighter-rouge">git status</code> can be used to investigate the status of files in a working directory.</p>
+
+<p>Finally, with the file in the staging area, we use <code class="language-plaintext highlighter-rouge">git commit</code> to move it to the repo.</p>
+
+<p>Should a staged file want to be ignored, we can use <code class="language-plaintext highlighter-rouge">git rm --cached &lt;filename&gt;</code> to remove the file from staging and untrack it.</p>
+
+<p><img src="/assets/posts/git/IMG_21.png" alt="/assets/posts/git/IMG_21.png" /></p>
+
+<p><code class="language-plaintext highlighter-rouge">git log</code> can be used to see a history of commits</p>
+
+<p><img src="/assets/posts/git/IMG_22.png" alt="/assets/posts/git/IMG_22.png" /></p>
+
+<p><code class="language-plaintext highlighter-rouge">git cat-file -p &lt;hash&gt;</code> is useful for illustrating how commits are linked. Invoking the command on our second command returns a tree &amp; parent— the latter being a pointer back to the first commit. This can be confirmed with the same command on that hash.</p>
+
+<p><img src="/assets/posts/git/IMG_23.png" alt="/assets/posts/git/IMG_23.png" /></p>
+
+<p>So, in commit objects, Git is keeping track of hashes, but also linking back to previous commits. This allows for reversion to different project snapshots!</p>
+
+<h2 id="git-branches--head">Git branches &amp; head</h2>
+
+<p><img src="/assets/posts/git/IMG_24.png" alt="/assets/posts/git/IMG_24.png" /></p>
+
+<h3 id="what-is-a-branch">What is a branch?</h3>
+
+<p>A branch is just a <em>text reference</em> to a commit.</p>
+
+<ul>
+  <li>Default branch is <strong>master</strong></li>
+  <li>Multiple branches can exist in the same repo</li>
+  <li>Pointers for all branches are located in <code class="language-plaintext highlighter-rouge">.git/refs/heads</code> folder</li>
+  <li>Only the current branch tracks new commits</li>
+  <li>The branch pointer moves automatically after every new commit</li>
+  <li>Use <code class="language-plaintext highlighter-rouge">git checkout &lt;branch&gt;</code> to change the branch</li>
+</ul>
+
+<p>Looking in the folder where branches are stored, we can see our project only has one branch <code class="language-plaintext highlighter-rouge">master</code> . Examining the file contents, we find a pointer to the most recent commit!</p>
+
+<p><img src="/assets/posts/git/IMG_25.png" alt="/assets/posts/git/IMG_25.png" /></p>
+
+<h3 id="what-is-head">What is HEAD?</h3>
+
+<p>Q: How does Git know which branch is current?</p>
+
+<p>A: That’s where HEAD is used. HEAD is a pointer or reference to the currently checked-out branch in commit.</p>
+
+<ul>
+  <li>Head is locally significant— if you work in a distributed project, you can move head locally without effecting others</li>
+  <li>The HEAD pointer can be found in <code class="language-plaintext highlighter-rouge">.git/HEAD</code></li>
+  <li>The default pointer is <code class="language-plaintext highlighter-rouge">ref</code>: <code class="language-plaintext highlighter-rouge">refs/heads/master</code></li>
+  <li>To change reference to a specific branch use <code class="language-plaintext highlighter-rouge">git checkout &lt;branch&gt;</code></li>
+  <li>To change reference to a specific commit use <code class="language-plaintext highlighter-rouge">git checkout &lt;sha1&gt;</code></li>
+</ul>
+
+<p>As you can see below, HEAD points to master, which points to the second commit!</p>
+
+<p><img src="/assets/posts/git/IMG_26.png" alt="/assets/posts/git/IMG_26.png" /></p>
+
+<p>But what if we delete all of our files and commit them?</p>
+
+<p><img src="/assets/posts/git/IMG_27.png" alt="/assets/posts/git/IMG_27.png" /></p>
+
+<p>While there are no files in our repository, all of the old Git objects still exist in their designated folder— Git stores the entire history of the project.</p>
+
+<h3 id="checking-out-a-specific-commit">Checking out a specific commit</h3>
+
+<p>In order to move HEAD to a different version of the project, we use <code class="language-plaintext highlighter-rouge">git checkout &lt;sha1&gt;</code>, which moves the HEAD pointer. There are a few ways to find a sha1— GitHub is probably the easiest (only the first few characters are needed):</p>
+
+<p><img src="/assets/posts/git/IMG_28.png" alt="/assets/posts/git/IMG_28.png" /></p>
+
+<p>Another option is to <code class="language-plaintext highlighter-rouge">git cat-file -p &lt;sha1&gt;</code> of the current master— this will show <code class="language-plaintext highlighter-rouge">tree</code>, <code class="language-plaintext highlighter-rouge">parent</code>, author, and other info. The <code class="language-plaintext highlighter-rouge">parent</code> refers to the prior commit, which is what we’re after:</p>
+
+<p><img src="/assets/posts/git/IMG_29.png" alt="/assets/posts/git/IMG_29.png" /></p>
+
+<p>For example, to undo the delete operation:</p>
+
+<p><img src="/assets/posts/git/IMG_30.png" alt="/assets/posts/git/IMG_30.png" /></p>
+
+<p>But what is a <em>detached HEAD state</em>? (it certainly doesn’t sound good)</p>
+
+<p>Normally, HEAD points to the branch. For example HEAD → master → commit. Since we checked out a commit, HEAD now points directly to it: HEAD → commit.</p>
+
+<p><img src="/assets/posts/git/IMG_31.png" alt="/assets/posts/git/IMG_31.png" /></p>
+
+<p>And now, voila! We have our three files back in our original directory &amp; staging area.</p>
+
+<p><img src="/assets/posts/git/IMG_32.png" alt="/assets/posts/git/IMG_32.png" /></p>
+
+<p>Note: since we moved back to the second commit, we’ll see no reference to the third commit in <code class="language-plaintext highlighter-rouge">git log</code>, since the second commit exists unaware of that future state.</p>
+
+<p><img src="/assets/posts/git/IMG_33.png" alt="/assets/posts/git/IMG_33.png" /></p>
+
+<p>To return to our third commit, we simply type <code class="language-plaintext highlighter-rouge">git checkout master</code>.</p>
+
+<h3 id="git-branch-management">Git Branch management</h3>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">git branch</code> - list all local branches.</li>
+  <li><code class="language-plaintext highlighter-rouge">git branch &lt;name&gt;</code> - create new branch.</li>
+  <li><code class="language-plaintext highlighter-rouge">git checkout &lt;name&gt;</code> - checkout specific branch.</li>
+  <li><code class="language-plaintext highlighter-rouge">git branch -d &lt;name&gt;</code> - delete a merged (or uncommitted) branch.</li>
+  <li><code class="language-plaintext highlighter-rouge">git branch -D &lt;name&gt;</code> - delete any branch (force delete).</li>
+  <li><code class="language-plaintext highlighter-rouge">git branch -m &lt;old&gt; &lt;new&gt;</code> - rename specific branch.</li>
+  <li><code class="language-plaintext highlighter-rouge">git checkout -b &lt;branch name&gt;</code> - shortcut to create &amp; checkout a branch.</li>
+</ul>
+
+<p>Note: when creating a new branch, we’re essentially cloning the current branch. As an example, we can see that the <code class="language-plaintext highlighter-rouge">sha1</code> of a recently created branch and <em>master</em> are identical— again, that’s because branches are just pointers to specific commits.</p>
+
+<p><img src="/assets/posts/git/IMG_34.png" alt="/assets/posts/git/IMG_34.png" /></p>
+
+<p>Checking out this new branch replaces the contents of the HEAD file to point to our temp branch instead of <em>master</em>.</p>
+
+<p><img src="/assets/posts/git/IMG_35.png" alt="/assets/posts/git/IMG_35.png" /></p>
+
+<p><strong>An interesting point:</strong> if we create a new branch with a new file which has identical contents to one of our earlier files <em>“Hello, Git”</em> we will find that Git reuses the same blob, even if the file name differs.</p>
+
+<p><img src="/assets/posts/git/IMG_36.png" alt="/assets/posts/git/IMG_36.png" /></p>
+
+<h2 id="cloning-exploring-and-modifying-public-repos">Cloning, exploring, and modifying public repos</h2>
+
+<p>Each GitHub repository is stored under an account— most repo</p>
+
+<p><img src="/assets/posts/git/IMG_37.png" alt="/assets/posts/git/IMG_37.png" /></p>
+
+<p>There are multiple methods to obtain the code for a repo. GitHub allows you to clone with HTTPS, SSH, or GitHub CLI, Open with GitHub Desktop, or Download ZIP. One pitfall of downloading a zip of the repo is that the <code class="language-plaintext highlighter-rouge">.git</code> folder <em>will not be included.</em> Hence, if you want to checkout different commits, branches, etc. it’s best to clone.</p>
+
+<p>Cloning is as simple as:</p>
+
+<p><img src="/assets/posts/git/IMG_38.png" alt="/assets/posts/git/IMG_38.png" /></p>
+
+<p>Now, the folder <code class="language-plaintext highlighter-rouge">hello-world</code> is stored locally, but is also under Git control on the <em>master</em> branch. Additionally, the <code class="language-plaintext highlighter-rouge">.git</code> folder is present and the <code class="language-plaintext highlighter-rouge">git log</code> contains the entire project history.</p>
+
+<p>Once a repo is cloned, we can then create a new branch, make adjustments, add files to staging, and commit to a local version… Just as before.</p>
+
+<p>In the following example, I checkout a new branch <code class="language-plaintext highlighter-rouge">new-feature</code> and make a commit. Notice the Git log:</p>
+
+<p><img src="/assets/posts/git/IMG_39.png" alt="/assets/posts/git/IMG_39.png" /></p>
+
+<p>While <code class="language-plaintext highlighter-rouge">new-feature</code> is HEAD, the previous commit is labeled <code class="language-plaintext highlighter-rouge">origin/master</code>, <code class="language-plaintext highlighter-rouge">origin/HEAD</code>, and <code class="language-plaintext highlighter-rouge">master</code>. This is because that commit is the last one pulled from the remote repo (origin). Since we pulled from remote, our local repository and the remote repository are connected— we can see the status of remote as of the pull.</p>
+
+<h3 id="git-diff">Git diff</h3>
+
+<p><img src="/assets/posts/git/IMG_40.png" alt="/assets/posts/git/IMG_40.png" /></p>
+
+<p>The <code class="language-plaintext highlighter-rouge">git diff</code> command presents a file summarizing the difference between two files in a commit. The structure is as follows:</p>
+
+<ol>
+  <li>The two files with a difference.</li>
+  <li>The SHA1 hashes of each file.</li>
+  <li>A maker indicating the start of the changed section, for example <code class="language-plaintext highlighter-rouge">@@-3,6 +3,8 @@</code>.
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">-3</code> - the first line where changes began in the old file</li>
+      <li><code class="language-plaintext highlighter-rouge">6</code> - the quantity of lines in a given section in the old file.</li>
+      <li><code class="language-plaintext highlighter-rouge">+3</code> - first line in new file</li>
+      <li><code class="language-plaintext highlighter-rouge">8</code> - total quantity of lines in the new file</li>
+    </ul>
+  </li>
+  <li>The changes.</li>
+</ol>
+
+<p><img src="/assets/posts/git/IMG_41.png" alt="/assets/posts/git/IMG_41.png" /></p>
+
+<p>In the above image, -3 shows the start of the old file (left column) and total number of lines (left column 3 to 8 is 6 total lines). +3 is the start of the new file (right column) and 8 is the total number of new lines (3 to 10 is 8 lines).</p>
+
+<h2 id="merging-branches--merge-conflicts">Merging branches &amp; merge conflicts</h2>
+
+<p><strong>Merge steps:</strong></p>
+
+<ol>
+  <li>Create new feature branch from the main branch</li>
+  <li>Make changes in the new branch and commit them</li>
+  <li>Checkout main branch (receiving branch)</li>
+  <li>Merge feature branch to the current receiving branch <code class="language-plaintext highlighter-rouge">git merge &lt;feature-branch&gt;</code></li>
+</ol>
+
+<p><strong>Why is Merging Needed?</strong></p>
+
+<p>We often consider <code class="language-plaintext highlighter-rouge">master</code> to be the “main” branch, which we then branch off to work on features or changes. On a development team, new code is constantly being added to <code class="language-plaintext highlighter-rouge">master</code> in parallel. So how do you incorporate your changes while allowing your teammates to continue working on and updating <code class="language-plaintext highlighter-rouge">master</code>? That’s where merging comes in. There are two main types of merge to discuss.</p>
+
+<ul>
+  <li>Fast-forward merge
+    <ul>
+      <li>In a fast forward merge, your feature is ahead of <code class="language-plaintext highlighter-rouge">master</code> and <code class="language-plaintext highlighter-rouge">master</code> has no other commits. The <code class="language-plaintext highlighter-rouge">master</code> branch pointer is simply moved to your commit— your branch becomes <code class="language-plaintext highlighter-rouge">master</code> and the feature branch may be deleted. This is a very straightforward and simple merge.</li>
+    </ul>
+  </li>
+  <li>
+    <p>Three-way merge</p>
+
+    <ul>
+      <li>
+        <p>In a three-way merge, your feature is behind <code class="language-plaintext highlighter-rouge">master</code>. You want to merge, but you <em>don’t</em> want to lose updates made since checkout. In these cases, git finds the nearest <em>ancestor</em> (common commit between both branches).</p>
+
+        <ul>
+          <li>To perform such a merge, git takes the ancestor, applies changes, and merges your feature. In the process, it moves HEAD to the new commit.</li>
+          <li>
+            <p>The new commit has two parents— the new ancestor branch and the feature. See the images below for before/after:</p>
+
+            <p><img src="/assets/posts/git/IMG_42.png" alt="/assets/posts/git/IMG_42.png" /></p>
+
+            <p><img src="/assets/posts/git/IMG_43.png" alt="/assets/posts/git/IMG_43.png" /></p>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<p><strong>What is a Merge Conflict?</strong></p>
+
+<ul>
+  <li>Merge conflicts can appear when the same files are edited in multiple branches.</li>
+  <li>Merge conflicts do not exist in fast-forward merges, where no other commits are made after HEAD, since there is no way for conflicts to appear.
+    <ul>
+      <li>Hence, merge conflicts can only arise in three way merges</li>
+    </ul>
+  </li>
+  <li>Conflicts must be resolved manually before changes can be merged.</li>
+</ul>
+
+<p><strong>Resolving Merge Conflicts</strong></p>
+
+<p>To reiterate, Git is a distributed version-control system while GitHub is a repository hosting service, designed to collaborate on and share Git repositories.</p>
+
+<h2 id="git-push-fetch-and-pull">Git push, fetch, and pull</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">Git push</code> sends changes committed in a local repository to a remote repository.</li>
+  <li><code class="language-plaintext highlighter-rouge">Git fetch</code> grabs updates from a remote repository to a local repository, but does not update the staging area or working directory. For example, if you <code class="language-plaintext highlighter-rouge">git fetch</code> a new branch, you will be able to see new branches, but your files will not be changed</li>
+  <li><code class="language-plaintext highlighter-rouge">Git checkout</code></li>
+  <li><code class="language-plaintext highlighter-rouge">Git pull</code> is a combination of <code class="language-plaintext highlighter-rouge">git fetch</code> and <code class="language-plaintext highlighter-rouge">git checkout</code> . The command grabs new changes in a remote repository, pulls them in, merges them into your local staging area, and writes them to your working directory.</li>
+</ul>
+
+<p><img src="/assets/posts/git/IMG_44.png" alt="/assets/posts/git/IMG_44.png" /></p>
+
+<ul>
+  <li>
+    <p>When a remote repository is cloned, Git creates a connection between local and remote repos. The default name for the remote repository is <strong>origin.</strong> The command <code class="language-plaintext highlighter-rouge">git remote</code> lists all servers for remote repositories.</p>
+
+    <p><img src="/assets/posts/git/IMG_45.png" alt="/assets/posts/git/IMG_45.png" /></p>
+  </li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">git branch</code> will show all local branches for the remote repository, the option <code class="language-plaintext highlighter-rouge">-a</code> will show <em>all</em> branches, including remote.</p>
+
+    <p><img src="/assets/posts/git/IMG_46.png" alt="/assets/posts/git/IMG_46.png" /></p>
+  </li>
+  <li>The tracking branch is your local branch connected to a specific remote branch. The default branch in a remote repository is <code class="language-plaintext highlighter-rouge">master</code>, but it can easily be changed in the GitHub settings.</li>
+  <li><code class="language-plaintext highlighter-rouge">git remote show origin</code> provides more verbose output, which includes the fetch and push URLs, the HEAD branch, all remote branches, local branches configured for <code class="language-plaintext highlighter-rouge">git pull</code> , and local refs configured for <code class="language-plaintext highlighter-rouge">git push</code> as well as their statuses.</li>
+  <li><code class="language-plaintext highlighter-rouge">git remote prune</code> removes stale branches from a local repository— that is, it deletes local branches that were removed remotely.</li>
+</ul>
+
+<p><img src="/assets/posts/git/IMG_47.png" alt="/assets/posts/git/IMG_47.png" /></p>
+
+<p>As previously mentioned, <code class="language-plaintext highlighter-rouge">git pull</code> is a two step process. As illustrated above, <code class="language-plaintext highlighter-rouge">git fetch</code> is first performed, which grabs all data from the remote Git repository and stores it locally. Git then performs <code class="language-plaintext highlighter-rouge">git merge FETCH_HEAD</code> to make the local repo current.</p>
+
+<p><strong>Overview of Git pull</strong></p>
+
+<ol>
+  <li>Checkout local branch and make sure it’s the tracking branch and has a corresponding remote. Use <code class="language-plaintext highlighter-rouge">git branch -vv</code> to check.</li>
+  <li><code class="language-plaintext highlighter-rouge">git pull</code></li>
+  <li>Git will fetch all changes from remote, <code class="language-plaintext highlighter-rouge">git fetch</code> is executed in the background.</li>
+  <li>After fetching Git updates <code class="language-plaintext highlighter-rouge">FETCH_HEAD</code> file that contains SHA1 hashes of the last commits in remote for all tracking branches.</li>
+  <li>Git merges remote into current branch <code class="language-plaintext highlighter-rouge">git merge FETCH_HEAD</code>, note this step is entirely local!</li>
+</ol>
+
+<p><img src="/assets/posts/git/IMG_48.png" alt="/assets/posts/git/IMG_48.png" /></p>
+
+<p>So what exactly is <code class="language-plaintext highlighter-rouge">FETCH_HEAD</code>? In the <code class="language-plaintext highlighter-rouge">.git</code> folder, there exist <code class="language-plaintext highlighter-rouge">HEAD</code>, <code class="language-plaintext highlighter-rouge">ORIG_HEAD</code>, and <code class="language-plaintext highlighter-rouge">FETCH_HEAD</code> files. Inspecting the <code class="language-plaintext highlighter-rouge">FETCH_HEAD</code> file, we find a list of branches and their status.</p>
+
+<p><img src="/assets/posts/git/IMG_49.png" alt="/assets/posts/git/IMG_49.png" /></p>
+
+<p>When <code class="language-plaintext highlighter-rouge">git fetch</code> is executed as part of <code class="language-plaintext highlighter-rouge">git pull</code>, git will update <code class="language-plaintext highlighter-rouge">.git/FETCH_HEAD</code> , which lists all available branches. The first branch in this list will be the checked out branch. Then, when <code class="language-plaintext highlighter-rouge">git merge FETCH_HEAD</code> is executed, the first branch listed in the <code class="language-plaintext highlighter-rouge">FETCH_HEAD</code> file without the <em>not-for-merge</em> tag will be merged into local tracking for the current branch.</p>
+
+<p><strong>Pushing to a remote repository</strong></p>
+
+<p>To create a new branch locally, use <code class="language-plaintext highlighter-rouge">git checkout -b [branch]</code>. To inspect, <code class="language-plaintext highlighter-rouge">git branch -vv</code> lists local branches, <code class="language-plaintext highlighter-rouge">git branch -r</code> lists remote branches. <code class="language-plaintext highlighter-rouge">git branch -a</code> lists all local and remote branches with their status.</p>
+
+<p>In order to push our new local branch and create a corresponding remote branch, we need to use <code class="language-plaintext highlighter-rouge">git push --set-upstream origin [branch]</code>. You can replace <code class="language-plaintext highlighter-rouge">--set-upstream</code> with <code class="language-plaintext highlighter-rouge">-u</code> to save some time!</p>
+
+<p>Now that the branches are linked, you can simply <code class="language-plaintext highlighter-rouge">git push</code> to update the local and remote branches simultaneously.</p>
+
+<p>Should a remote branch be deleted, you can update tracking statuses for local branches using the command <code class="language-plaintext highlighter-rouge">git remote update origin --prune</code> &amp; confirm local changes using <code class="language-plaintext highlighter-rouge">git branch --vv</code>.</p>
+
+<p>To remove a remote branch using the local terminal using the command <code class="language-plaintext highlighter-rouge">git push origin -d [branch]</code>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">git show-ref</code> shows all references, both local &amp; remote. Pass a branch to the command to see a reference for that particular branch.</p>
+
+<p><img src="/assets/posts/git/IMG_50.png" alt="/assets/posts/git/IMG_50.png" /></p>
+
+<p>Here, we can see the hashes are identical for remote and local copies of master— this is a quick and easy way to check if a branch is up-to-date with it’s remote counterpart from the terminal.</p>
+
+<h2 id="git-tags">Git tags</h2>
+
+<p><img src="/assets/posts/git/IMG_51.png" alt="/assets/posts/git/IMG_51.png" /></p>
+
+<p>A <strong>Tag</strong> is a static text pointer to a specific commit. Tags were introduced to fill the void left by branches, which are dynamic pointers to different commits. At anytime, we can checkout a specific tag and move directly to that commit.</p>
+
+<p>Git tags are mostly used to add release versions to a project. For example, we could add a specific tag anytime a <code class="language-plaintext highlighter-rouge">feature</code> branch is merged into master.</p>
+
+<h3 id="staging-vs-production"><strong>Staging vs. Production</strong></h3>
+
+<p>In modern software development, most projects adhere to CI/CD principals (Continuous Integration / Continuous Development). With CI/CD, you’re using two separate development environments: <strong>Staging</strong> and <strong>Production</strong>.</p>
+
+<p><strong>Staging</strong></p>
+
+<ul>
+  <li>Corresponding branch: <code class="language-plaintext highlighter-rouge">release</code></li>
+  <li>Primarily for testing, internal use</li>
+  <li>Frequent merges</li>
+  <li>Different feature branches are merged into a release branch</li>
+  <li>Many have merge rights</li>
+</ul>
+
+<p><strong>Production</strong></p>
+
+<ul>
+  <li>Corresponding branch: <code class="language-plaintext highlighter-rouge">master</code></li>
+  <li>For stable production service, externally facing</li>
+  <li>Merging happens on a release cycle— typically monthly or bi-monthly.</li>
+  <li>Only release branch is merged into <code class="language-plaintext highlighter-rouge">master</code>.</li>
+  <li>Few have merge rights.</li>
+</ul>
+
+<h3 id="semantic-versioning">Semantic Versioning</h3>
+
+<p><strong>Semantic Versioning</strong> is a common convention for version naming. In semantic version, each number corresponds to a particular component of the version. The convention is <code class="language-plaintext highlighter-rouge">MAJOR.MINOR.PATCH</code>, see <a href="http://semver.org">semver.org</a> for specifics on this.</p>
+
+<p>There are two different types of tags in Git: <strong>lightweight</strong> and <strong>annotated.</strong> While both are stored in <code class="language-plaintext highlighter-rouge">.git/refs/tags</code>, annotated tags are also stored in <code class="language-plaintext highlighter-rouge">.git/objects</code> and include a tag message, author, and date.</p>
+
+<p>Lightweight— <code class="language-plaintext highlighter-rouge">git tag v1.0.0</code></p>
+
+<p>Annotated— <code class="language-plaintext highlighter-rouge">git tag -a v1.0.0 -m "Hello, world"</code></p>
+
+<p><strong>Note:</strong> tag names must be unique across an entire repository.</p>
+
+<h2 id="rebasing">Rebasing</h2>
+
+<p>Rebasing is a different way to merge two branches together. There are some advantages and disadvantages to this method.</p>
+
+<ol>
+  <li>Rebasing rewrites history— it doesn’t keep the entire history of all commits (some commits are lost).</li>
+  <li>History becomes linear— with merging, there are commits with multiple parents, but with rebasing every commit has a single parent (if you rebase &amp; merge branches).</li>
+</ol>
+
+<p><img src="/assets/posts/git/IMG_52.png" alt="/assets/posts/git/IMG_52.png" /></p>
+
+<h3 id="rebasing-steps">Rebasing Steps</h3>
+
+<ol>
+  <li>Checkout <code class="language-plaintext highlighter-rouge">feature</code> branch— <code class="language-plaintext highlighter-rouge">git checkout feature-1</code></li>
+  <li>Rebase <code class="language-plaintext highlighter-rouge">feature</code> branch on top of the <code class="language-plaintext highlighter-rouge">base</code> branch— <code class="language-plaintext highlighter-rouge">git rebase master</code></li>
+  <li>Checkout <code class="language-plaintext highlighter-rouge">base</code> branch— <code class="language-plaintext highlighter-rouge">git checkout master</code></li>
+  <li>Merge <code class="language-plaintext highlighter-rouge">feature</code> branch into the <code class="language-plaintext highlighter-rouge">base</code> branch using fast forward merge— <code class="language-plaintext highlighter-rouge">git merge feature-1</code></li>
+</ol>
+
+<p>In steps 1 &amp; 2, we’re rebasing the feature branch onto the base branch. In steps 3 &amp; 4, we’re merging feature into base.</p>
+
+<p>When a rebase is performed, git creates copies of old commits and moves them to master. Old commits are garbage collected.</p>
+
+<p><img src="/assets/posts/git/IMG_53.png" alt="/assets/posts/git/IMG_53.png" /></p>
+
+<h2 id="ignoring-files-in-git">Ignoring files in Git</h2>
+
+<p>A <code class="language-plaintext highlighter-rouge">.gitignore</code> file explicitly tells Git which files/folders to ignore. While files within <code class="language-plaintext highlighter-rouge">.gitignore</code> will not be added to the repository, <code class="language-plaintext highlighter-rouge">.gitignore</code> must be in the repository itself (usually in the root of the repo).</p>
+
+<h3 id="basic-gitignore-rules">Basic gitignore rules</h3>
+
+<p>There are three statuses in Git: untraced, tracked, and ignored. Within the tracked status, there are the three sub-statuses which we’re familiar with now: unmodified, modified, and staged. The <code class="language-plaintext highlighter-rouge">.gitignore</code> folder defines the rules for which files end up in the ignored status.</p>
+
+<p>Within a <code class="language-plaintext highlighter-rouge">.gitignore</code> file, you can specify to ignore a single file within a repository (just list the name) or an entire folder. ([FOLDER]/) Wildcards also apply. An example gitignore file might look like:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#Ignore single file
+new-file.txt
+
+#Ignore directory
+bin/
+
+#Ignore temp files
+*.tmp
+</code></pre></div></div>
+
+<p>In order to commit a previously ignored file, simply remove the filename from gitignore. To ignore a previously committed file, just add the filename back into gitignore and commit. If you’d like the file to remain in the working directory, run the command <code class="language-plaintext highlighter-rouge">git rm --cached [FILE]</code> — this will keep the file in the local directory, while removing it from the repo.</p>
+
+<h3 id="common-practices--templates">Common practices &amp; templates</h3>
+
+<p><strong>Best Practices</strong></p>
+
+<ul>
+  <li>build folders like <code class="language-plaintext highlighter-rouge">/bin</code> — these can be created from the repository itself</li>
+  <li>dependency folders like <code class="language-plaintext highlighter-rouge">node_modules</code></li>
+  <li>compiled and log files like <code class="language-plaintext highlighter-rouge">*.pyc, *log</code></li>
+  <li>hidden OS files like <code class="language-plaintext highlighter-rouge">Thumbs.db</code> or <code class="language-plaintext highlighter-rouge">.DS_Store</code></li>
+</ul>
+
+<p><a href="http://gitignore.io">gitignore.io</a> has some example templates for various languages. <a href="http://github.com/github/gitignore">github.com/github/gitignore</a> is a collection of gitignore files for specific applications.</p>
+
+<h2 id="detached-head">Detached HEAD</h2>
+
+<p><strong>Detached HEAD</strong> occurs when you checkout a particular commit using its SHA1 hash. The HEAD no longer points to a branch, but rather <em>only</em> a commit. In a detached HEAD state, you can create commits outside of any particular branch! HEAD will point to these new commits, but they too will be outside any branch.</p>
+
+<p>Returning to another branch with <code class="language-plaintext highlighter-rouge">git checkout master</code> , for example, will bring you back to that state. Since commits in the detached state were outside of a branch, they will be garbage collected by Git (this occurs in 30 days). In order to keep changes, you can checkout a branch with changes made in the detached state.</p>
+
+<p>This means that a detached HEAD state is a good opportunity for experimental commits— if something breaks you can simply checkout another branch without having to create a separate branch or delete it when you’re done.</p>
+
+  </div><a class="u-url" href="/studies/2021/03/01/how-git-works.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+    <data class="u-url" href="/%20/"></data>
+
+    <div class="wrapper">
+
+        <div class="footer-col-wrapper">
+            <div class="footer-col">
+                <p class="feed-subscribe">
+                    <a href="/feed.xml">
+                        <svg class="svg-icon orange">
+                            <use xlink:href="/assets/minima-social-icons.svg#rss"></use>
+                        </svg><span>Subscribe</span>
+                    </a>
+                </p>
+                <ul class="contact-list">
+                    <li class="p-name">Matt Palmer</li>
+                    <li><a class="u-email" href="mailto:hello@mattpalmer.io">hello@mattpalmer.io</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <p>Data Enginner at Underline &amp; Swarthmore College grad. You can find me at the gym,  climbing rocks, or on a trail when not at work.
+</p>
+            </div>
+        </div>
+
+        <div class="social-links"><ul class="social-media-list"><li><a rel="me" href="https://github.com/mattppal" title="mattppal"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg></a></li><li><a rel="me" href="https://www.linkedin.com/in/matt-palmer" title="matt-palmer"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#linkedin"></use></svg></a></li><li><a rel="me" href="https://twitter.com/mattppal" title="mattppal"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg></a></li><li><a rel="me" href="https://keybase.io/mattpal" title="mattpal"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#keybase"></use></svg></a></li></ul>
+</div>
+
+    </div>
+
+    <script type="text/typescript" src="./assets/utm.ts"></script>
+
+</footer></body>
+
+</html>

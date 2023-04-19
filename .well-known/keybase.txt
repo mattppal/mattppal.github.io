@@ -1,0 +1,56 @@
+==================================================================
+https://keybase.io/mattpal
+--------------------------------------------------------------------
+
+I hereby claim:
+
+  * I am an admin of https://mattpalmer.io
+  * I am mattpal (https://keybase.io/mattpal) on keybase.
+  * I have a public key ASBfnIHosWHQoLHsRCA2EYCBU2IciVwWejo5UrXYkZlENAo
+
+To do so, I am signing this object:
+
+{
+  "body": {
+    "key": {
+      "eldest_kid": "01205f9c81e8b161d0a0b1ec44203611808153621c895c167a3a3952b5d8919944340a",
+      "host": "keybase.io",
+      "kid": "01205f9c81e8b161d0a0b1ec44203611808153621c895c167a3a3952b5d8919944340a",
+      "uid": "286a3021d48bb04844c66d23996d7419",
+      "username": "mattpal"
+    },
+    "merkle_root": {
+      "ctime": 1666633159,
+      "hash": "767257ab9e08849dd97898ad788d1be3a43ae4e178696fd692d75147ee985aab02e07989faeeaa86b9cf8bec3a44febbb0b872ae32533b36caac2a19334dd718",
+      "hash_meta": "562f5a3d7331da9e2648bb7986f5bf70db19ca32d3ff5843396c08143b78448e",
+      "seqno": 23424617
+    },
+    "service": {
+      "entropy": "QS56Eqzh2uNruDXZFz7N/epG",
+      "hostname": "mattpalmer.io",
+      "protocol": "https:"
+    },
+    "type": "web_service_binding",
+    "version": 2
+  },
+  "client": {
+    "name": "keybase.io go client",
+    "version": "6.0.1"
+  },
+  "ctime": 1666633193,
+  "expire_in": 504576000,
+  "prev": "fb7bc7712415736ee98a13b0131b4bf59ff43c524819d26280bb1963b80db0ad",
+  "seqno": 11,
+  "tag": "signature"
+}
+
+which yields the signature:
+
+hKRib2R5hqhkZXRhY2hlZMOpaGFzaF90eXBlCqNrZXnEIwEgX5yB6LFh0KCx7EQgNhGAgVNiHIlcFno6OVK12JGZRDQKp3BheWxvYWTESpcCC8Qg+3vHcSQVc27pihOwExtL9Z/0PFJIGdJigLsZY7gNsK3EIGON0SWojuol5fibzraUFN1FbrYKXU27d+ghhuMYkmKbAgHCo3NpZ8RAg2Nj4ZAE7385J60fT3r5QjTaf3BiTVy/JrLC8a6t1kzoprqv6NGmLLJC73kvb5ANO0nlWJWGmyI607dPc6VfBqhzaWdfdHlwZSCkaGFzaIKkdHlwZQildmFsdWXEINw/dVNp8ngCsEmyYbldSOl4vuUtgRVTZNe28fyav+xxo3RhZ80CAqd2ZXJzaW9uAQ==
+
+And finally, I am proving ownership of this host by posting or
+appending to this document.
+
+View my publicly-auditable identity here: https://keybase.io/mattpal
+
+==================================================================

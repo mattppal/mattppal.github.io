@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>🌶️ Hot Takes on the Modern Data Stack | Matt Palmer</title>
+<meta name="generator" content="Jekyll v4.3.2" />
+<meta property="og:title" content="🌶️ Hot Takes on the Modern Data Stack" />
+<meta name="author" content="Matt Palmer" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Intro" />
+<meta property="og:description" content="Intro" />
+<meta property="og:site_name" content="Matt Palmer" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2023-04-07T00:00:00+00:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="🌶️ Hot Takes on the Modern Data Stack" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Matt Palmer"},"dateModified":"2023-04-07T00:00:00+00:00","datePublished":"2023-04-07T00:00:00+00:00","description":"Intro","headline":"🌶️ Hot Takes on the Modern Data Stack","mainEntityOfPage":{"@type":"WebPage","@id":"/data/2023/04/07/hot-takes.html"},"url":"/data/2023/04/07/hot-takes.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" title="Matt Palmer" /><script async src="https://www.googletagmanager.com/gtag/js?id=G-EC2ZQ7Y8TD"></script>
+<script>
+  window['ga-disable-G-EC2ZQ7Y8TD'] = window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes" || navigator.msDoNotTrack === "1";
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+
+  gtag('config', 'G-EC2ZQ7Y8TD');
+</script>
+
+<link rel="apple-touch-icon" sizes="120x120" href="/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+<link rel="manifest" href="/favicon/site.webmanifest">
+<link rel="mask-icon" href="/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="theme-color" content="#ffffff"></head>
+<body><header class="site-header">
+
+    <div class="wrapper"><a class="site-title" rel="author" href="/">Matt Palmer</a><nav class="site-nav">
+            <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+            <label for="nav-trigger">
+                <span class="menu-icon">
+                    <svg viewBox="0 0 18 15" width="18px" height="15px">
+                        <path
+                            d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z" />
+                    </svg>
+                </span>
+            </label>
+
+            <div class="trigger"><a class="page-link" href="/about/">about</a><a class="page-link" href="/art/">art</a><a class="page-link" href="/books/">books</a><a class="page-link" href="/cv">resume</a><a class="page-link" href="/writing/">writing</a></div>
+        </nav></div>
+</header><main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">🌶️ Hot Takes on the Modern Data Stack</h1>
+    <p class="post-meta"><time class="dt-published" datetime="2023-04-07T00:00:00+00:00" itemprop="datePublished">
+        Apr 7, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="intro">Intro</h2>
+
+<p>Hot on the heels of <a href="/data/2023/04/01/data-council-austin.html">Data Council Austin</a>, I’ve been thinking about the data landscape— both from what I’ve seen firsthand and gleaned from discussions, forums, and blog posts. I’m grateful for my exposure to a spectrum of data teams, from going 0 ➡️ 1 to driving product at scale. Simultaneously, it’s been refreshing to see community growth, led by <a href="https://www.getdbt.com/community/join-the-community/">dbt</a>, <a href="https://locallyoptimistic.com/">Locally Optimistic</a>, <a href="https://www.operationalanalytics.club/">Operational Analytics</a> and others, that has shed light on what it means to be a data practitioner.</p>
+
+<p>Through these media, I’ve found common pain-points and trends that I felt warranted a blog post. The data landscape has changed drastically in the past 5 years, so here’s what I feel are some (potentially painful) truths:</p>
+
+<h2 id="-hot-takes">🔥 Hot takes</h2>
+
+<p>❗️ <strong>dbt lacks some basic functionality expected of a best-in-class tool</strong></p>
+
+<p>I wish I was wrong here, but from my experience with dbt Core, there’s much to be desired. While dbt was <em>revolutionary</em> in the early days of the MDS, little has changed since then. The lack of column-level lineage, basic documentation tooling, and manual nature of the product scream potential for a disruptive incumbent. To implement dbt from scratch, one of the following is necessary:</p>
+
+<ul>
+  <li>Know someone who can guide you through common pitfalls.</li>
+  <li>Do an ungodly amount of research to find the libraries necessary to automate the painful parts.</li>
+  <li>Grind through the implementation, make a ton of mistakes, and re-write your entire codebase.</li>
+</ul>
+
+<p>To me, dbt will always live on as a <em>framework</em>. By no means am I dismissing the value of the tool, but the architecture of dbt is dated. Like Airflow, this is a major disadvantage— they have some major tech-debt and it’ll be tough to implement foundational changes. I suspect the dbt team realizes this, hence their shift in stance towards “enabling an ecosystem” for features like <a href="https://github.com/dbt-labs/dbt-core/discussions/4458">column level lineage</a>. Furthermore, dbt will always lack what <a href="https://cloud.google.com/dataform">Google’s Dataform</a> now provides: end-to-end integration with a data stack at no additional cost.</p>
+
+<p>It’s a mystery why Google hasn’t invested more in the Dataform + BigQuery experience, given the insane opportunity they have. As I’ll discuss later, many are jumping ship from Redshift. The potential for Google to roll out a “data environment in a box” is super enticing, but who know’s what’s going on in product over there? 🧐</p>
+
+<p>The dbt situation is odd. Vendors and libraries are springing up whose main purpose is to cover dbt’s shortcomings with advanced lineage, observability, and metadata capabilities (with some success), but that doesn’t really solve the problem. It’s not efficient or feasible for a practitioner to go “shopping” for every single component of a transformation framework— we need a tool that does it all (and well). While dbt will live on thanks to community adoption and support, there’s a lot of potential for improvement.</p>
+
+<p>❗️ <strong>Deploying a “production” data warehouse is unnecessarily hard and gated by tribal knowledge.</strong></p>
+
+<p>I’ve had the fortune of working with several data warehousing technologies. While developments in the past half decade have centered around abstracting DevOps (i.e. separation of storage/compute, introduction of serverless architecture, autoscaling, etc.), little has been done to simplify the process of building a functional analytics solution.</p>
+
+<p>Take, for example, creating a test/production environment. This is a relatively trivial problem that’s actually become easier in products like Snowflake with <a href="https://community.snowflake.com/s/question/0D50Z00009C3VlMSAV/zero-copy-cloning">zero-copy clones</a>, but for tools like Redshift or BigQuery, it’s necessary to architect some unnecessarily complex process— either restoring a snapshot nightly or programmatically generating SQL. The worst part: most of the clever solutions to this problem are buried in forums/Slack/etc. Once again, knowing someone who’s solved this problem <em>for your specific warehouse</em> can be a huge time saver.</p>
+
+<p>Separately, managing permissions is also a headache. This is something that could be (arguably) more baked-in to a transformation tool like dbt (I have qualms with their <a href="https://docs.getdbt.com/blog/configuring-grants">permission guidelines</a> as well, but don’t get me started). While GitLab manages an <a href="https://about.gitlab.com/handbook/business-technology/data-team/platform/permifrost/">open-source tool</a> for Snowflake permissions, I have yet to find an equivalent for Redshift and have resorted to writing Terraform, which only accomplishes about half of what I was hoping for.</p>
+
+<p>I believe this functionality should be standard in a data warehouse in 2023. Perhaps there’s opportunity for a product that can roll-out and maintain dev/stage/prod environments across vendors or make permissions management a breeze.</p>
+
+<p>❗️ <strong>Redshift is no longer a true competitor in the warehouse space.</strong></p>
+
+<p>Similar to the Google Dataform situation, this is a bit of an enigma. Having practically <strong>invented</strong> cloud storage and dominating the space on a number of fronts, Amazon has completely let Redshift go.</p>
+
+<p>Lately, almost every improvement in the product has come as a response to competitors like Snowflake and BigQuery innovating on storage, compute, and serverless. This is despite the wild competitive advantage Redshift has, given it’s closeness to S3 and the <em>potential</em> for tighter integration all of Amazon’s services. Still, we lack functionality like <em>uploading a CSV directly to a table</em> 😒 (not only is this possible in BigQuery, but Google Sheets can sync directly to the db).</p>
+
+<p>Amazon is finally rolling out features like <a href="https://aws.amazon.com/about-aws/whats-new/2022/11/amazon-redshift-supports-auto-copy-amazon-s3/">AUTO-COPY</a>, but at a snail’s pace— it’s been in preview for the past 6 months! I see tremendous opportunity for players like Amazon and Google (that have cloud services) to innovate on the data side, but it doesn’t seem to be a priority.</p>
+
+<p>Why isn’t it possible to natively couple a production database to an OLAP store and provide out-of-the-box CDC? This is more of a “data warehouse in a box” type stuff, but for 99% of companies it will save weeks/months of time (and reduce Fivetran bills).</p>
+
+<p>As data teams continue to proliferate, maybe we’ll see movement… or a disruptive competitor. In the meantime, I feel Snowflake and BigQuery are miles ahead of Redshift, which is quickly trending towards an obsolete product.</p>
+
+<p>❗️ <strong>Airflow is obsolete.</strong></p>
+
+<p>Speaking of obsolete products, I would <em>highly</em> advise against an Airflow implementation. Why? There are a number of tools (<a href="https://dagster.io/">Dagster</a>, <a href="https://www.prefect.io">Prefect</a>, <a href="https://mage.ai/">Mage</a>, to name a few) that are being built from the ground-up to address Airflow’s failures. These solutions are more nimble than Airflow and can iterate fast. One of the biggest downfalls of Airflow has been it’s success— now, the open source community has to focus on <em>maintaining</em> the product to be sure it doesn’t break existing deployments rather than innovating. The <a href="https://github.com/apache/airflow">717 open issues on github</a> (as of this writing) are a testament to this.</p>
+
+<p>If you’re looking for an orchestrator (and executor, which Airflow is not) that features a testing framework, better observability, support for dataframes as assets/objects, and tighter integration with data transformation tools, like dbt, I’d <em>highly</em> suggest one of the above products/libraries.</p>
+
+<p>❗️ <strong>Airbyte is not production-grade software.</strong></p>
+
+<p>I’m not sure if this is a hot take or just a fact. With nearly <a href="https://github.com/airbytehq/airbyte"><em>4,000</em> open issues on Github</a> as of this writing, it’s safe to say their dev team is underwater. I feel Airbyte’s marketing to be disingenuous, as it might seem a Fivetran-killer when, in fact, it breaks in most use cases (I can confirm this from personal experience).</p>
+
+<p>If I was a member of the Airbyte team, I’d be <em>very</em> concerned with Fivetran’s recent <a href="https://www.fivetran.com/blog/fivetran-free-plan">“free-tier”</a> announcement. The number of MAR they’re offering will cover most teams until they have the money to pay for a service like Fivetran, at which point Airbyte will be out of consideration.</p>
+
+<p>For modern data teams, I think the ingestion problem is pretty close to being solved, with Fivetran for well-know sources and <a href="https://meltano.com/">Meltano</a> as a framework for building Singer Spec connections to lesser-known ones. There will always be edge-cases, but this is about as close to a consensus as we’ll get for a particular part of the MDS.</p>
+
+<h2 id="final-words">Final words</h2>
+
+<p>It’s important to recognize that it’s easy to be a critic. After all, what have I built that compares to these amazing tools? Hopefully, I’ll have a different answer to that one day, but for now, I should caveat that every product I just mentioned has helped to drive a revolution in data science and analytics by making it easier to do my job.</p>
+
+<p>What I’m hoping to convey with my tacky “hot takes” is that we’re in the midst of a <em>very</em> exciting time in data and software development. Never before has the friction to building something been so low. With tools like <a href="https://modal.com/">Modal</a> and <a href="https://supabase.com/">Supabase</a>, smaller teams can build amazing products. I suspect AI will only accelerate this trend. My personal view is that we’ll see a sea of mini-development teams and lean companies pop up that can leverage these frameworks to out-compete incumbents. I guess only time will tell. 🤷‍♂️</p>
+
+  </div><a class="u-url" href="/data/2023/04/07/hot-takes.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+    <data class="u-url" href="/%20/"></data>
+
+    <div class="wrapper">
+
+        <div class="footer-col-wrapper">
+            <div class="footer-col">
+                <p class="feed-subscribe">
+                    <a href="/feed.xml">
+                        <svg class="svg-icon orange">
+                            <use xlink:href="/assets/minima-social-icons.svg#rss"></use>
+                        </svg><span>Subscribe</span>
+                    </a>
+                </p>
+                <ul class="contact-list">
+                    <li class="p-name">Matt Palmer</li>
+                    <li><a class="u-email" href="mailto:hello@mattpalmer.io">hello@mattpalmer.io</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <p>Data Enginner at Underline &amp; Swarthmore College grad. You can find me at the gym,  climbing rocks, or on a trail when not at work.
+</p>
+            </div>
+        </div>
+
+        <div class="social-links"><ul class="social-media-list"><li><a rel="me" href="https://github.com/mattppal" title="mattppal"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg></a></li><li><a rel="me" href="https://www.linkedin.com/in/matt-palmer" title="matt-palmer"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#linkedin"></use></svg></a></li><li><a rel="me" href="https://twitter.com/mattppal" title="mattppal"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg></a></li><li><a rel="me" href="https://keybase.io/mattpal" title="mattpal"><svg class="svg-icon grey"><use xlink:href="/assets/minima-social-icons.svg#keybase"></use></svg></a></li></ul>
+</div>
+
+    </div>
+
+    <script type="text/typescript" src="./assets/utm.ts"></script>
+
+</footer></body>
+
+</html>
